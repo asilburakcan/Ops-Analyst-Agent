@@ -14,6 +14,7 @@ import time
 import backend as b
 
 MAX_REPAIRS = 2
+MAX_ROWS = 1000
 FORBIDDEN = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|merge|unload|msck|call)\b", re.I)
 
 NOTES = """lm_routes: 1 row per delivery route. route_score = route quality rating: 'High', 'Medium', 'Low'.
@@ -59,6 +60,8 @@ def chat(model, messages):
 def run_sql(sql):
     if not re.match(r"^\s*(select|with)\b", sql, re.I) or FORBIDDEN.search(sql):
         raise ValueError("only read-only SELECT queries are allowed")
+    if not re.search(r"\blimit\s+\d+\s*$", sql, re.I):  # "show me the data" must not pull 1.46M rows
+        sql += f"\nLIMIT {MAX_ROWS}"
     return b.query(sql)
 
 
@@ -95,7 +98,12 @@ def analyze(question, result):
 
 def ask(question):
     sql, df, repairs = write_sql(question)
-    analysis = analyze(question, df.head(20).to_dict("records")) if df is not None else {}
+    analysis = {}
+    if df is not None:
+        result = {"rows": df.head(20).to_dict("records"), "total_rows_returned": len(df)}
+        if len(df) >= MAX_ROWS or len(df) > 20:
+            result["note"] = "This is only a sample of raw rows, not the whole dataset. Do not generalize from it."
+        analysis = analyze(question, result)
     return {"sql": sql, "df": df, "repairs": repairs, "analysis": analysis}
 
 
