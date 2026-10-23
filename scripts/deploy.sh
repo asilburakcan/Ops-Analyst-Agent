@@ -8,4 +8,4 @@ mkdir -p logs
 # daily run at 05:00 UTC (08:00 Turkey); replace any old line so deploys never duplicate it
 JOB="0 5 * * * cd $PWD && venv/bin/python pipeline.py >> logs/pipeline.log 2>&1"
 (crontab -l 2>/dev/null | grep -v 'pipeline.py'; echo "$JOB") | crontab -
-echo "deployed $(git rev-parse --short HEAD 2>/dev/null || date)" >> logs/deploys.log
+echo "deployed $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> logs/deploys.log
