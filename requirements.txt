@@ -1,0 +1,6 @@
+pandas>=2.2
+scikit-learn
+lightgbm
+python-dotenv
+boto3
+awswrangler

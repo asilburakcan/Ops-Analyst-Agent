@@ -1,0 +1,24 @@
+# secrets (GROQ_API_KEY, bucket name); only the template is pushed
+.env
+.env.*
+!.env.example
+
+# data: Last Mile downloads + old DataCo version, code and notes (data/dataco_old)
+data/
+*.csv
+*.json
+*.parquet
+*.pkl
+
+# cron output on EC2
+logs/
+*.log
+
+# python / OS
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.idea/
