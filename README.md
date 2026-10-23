@@ -14,7 +14,7 @@ Each part is checked against ground truth. The model is tested on days it never 
 Amazon Last Mile open data (public S3, us-east-1)
         │  ingest.py: flatten nested JSON, check data, write Parquet
         ▼
-Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── SQL agent ──► LLM (Bedrock or Groq)
+Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── SQL agent ──► LLM (Groq or Bedrock)
         ▲                                           │
         └── risk_flags, model_metrics, daily_reports ◄── model.py + analyst agent
 
@@ -23,7 +23,7 @@ EC2: cron runs `python pipeline.py` every day. Credentials come from the instanc
 
 | File | Job |
 |---|---|
-| `backend.py` | The only file that talks to AWS: `query()` (Athena), `save()` (S3 + Glue), `llm()` (Bedrock, or Groq with `LLM=groq`) |
+| `backend.py` | The only file that talks to AWS: `query()` (Athena), `save()` (S3 + Glue), `llm()` (Groq, or Bedrock with `LLM=bedrock`) |
 | `ingest.py` | Public S3 → `lm_routes`, `lm_stops`, `lm_packages` in own S3 + Glue, with data checks |
 | `model.py` | Failed-delivery risk model, time-split validation, daily risk flags |
 | `agents.py` | SQL agent (self-repair) and analyst agent |
@@ -67,18 +67,18 @@ First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena
 > *Finding:* Overall fail rate 0.62%; flagged 3560 packages (5.34% fail). Lift 8.6. Top risk stations: DLA8, DLA9, DLA7, DSE4, DCH1.
 > *Automation idea:* Automated rerouting for flagged packages at high-risk stations based on service time and load.
 
-**LLM provider:** Bedrock is the default. New AWS accounts can start with Bedrock quotas at 0; until AWS raises them, `LLM=groq` in `.env` runs the same agents on Groq. Nothing else changes.
+**LLM provider:** Groq (`gpt-oss-120b` for SQL, `gpt-oss-20b` for the analyst) is the default. `LLM=bedrock` in `.env` runs the same agents on Amazon Bedrock (Nova) with no other code change. New AWS accounts can start with Bedrock quotas at 0, so Groq kept the project unblocked.
 
 ## Run on AWS
 
-1. **IAM role for EC2** with `AmazonS3FullAccess`, `AmazonAthenaFullAccess`, `AWSGlueConsoleFullAccess` and `AmazonBedrockFullAccess`. Check in Service Quotas that the Bedrock Nova quotas in your region are above 0 (or use `LLM=groq`).
+1. **IAM role for EC2** with `AmazonS3FullAccess`, `AmazonAthenaFullAccess` and `AWSGlueConsoleFullAccess` (add `AmazonBedrockFullAccess` only for `LLM=bedrock`).
 2. **EC2:** Amazon Linux 2023, `t3.small` in `us-east-2` with the role attached. Ingest peaks at about 1.5 GB RAM, so add a 2 GB swap file. Open SSH to your own IP only.
 3. **Install:**
    ```bash
    sudo dnf install -y git python3.11 python3.11-pip
    git clone https://github.com/asilburakcan/Ops-Analyst-Agent.git && cd Ops-Analyst-Agent
    python3.11 -m venv venv && venv/bin/pip install -r requirements.txt
-   cp .env.example .env   # set S3_BUCKET to a globally unique name
+   cp .env.example .env   # set S3_BUCKET (globally unique) and GROQ_API_KEY
    venv/bin/python pipeline.py --eval   # first run also ingests
    ```
 4. **Daily trigger:**

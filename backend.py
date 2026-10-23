@@ -1,7 +1,7 @@
 """The only file that talks to AWS.
 
 Data : S3 (Parquet) + Glue Data Catalog, queried with Athena
-LLM  : Bedrock (LLM=bedrock, default) or Groq (LLM=groq) - one setting, same agents
+LLM  : Groq (LLM=groq, default) or Bedrock (LLM=bedrock) - one setting, same agents
 Credentials come from the EC2 instance role (or `aws configure` on a laptop). No keys in code.
 """
 import os
@@ -15,7 +15,7 @@ load_dotenv()
 REGION = os.getenv("AWS_REGION", "eu-central-1")
 BUCKET = os.environ["S3_BUCKET"]
 DATABASE = os.getenv("GLUE_DATABASE", "last_mile")
-LLM = os.getenv("LLM", "bedrock")
+LLM = os.getenv("LLM", "groq")
 if LLM == "groq":
     SQL_MODEL = os.getenv("GROQ_SQL_MODEL", "openai/gpt-oss-120b")
     ANALYST_MODEL = os.getenv("GROQ_ANALYST_MODEL", "openai/gpt-oss-20b")
