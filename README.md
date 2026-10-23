@@ -14,16 +14,16 @@ Each part is checked against ground truth. The model is tested on days it never 
 Amazon Last Mile open data (public S3, us-east-1)
         │  ingest.py: flatten nested JSON, check data, write Parquet
         ▼
-Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── SQL agent ──► Bedrock
+Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── SQL agent ──► LLM (Bedrock or Groq)
         ▲                                           │
-        └── risk_flags, model_metrics, daily_reports ◄── model.py + analyst agent (Bedrock)
+        └── risk_flags, model_metrics, daily_reports ◄── model.py + analyst agent
 
 EC2: cron runs `python pipeline.py` every day. Credentials come from the instance IAM role.
 ```
 
 | File | Job |
 |---|---|
-| `backend.py` | The only file that talks to AWS: `query()` (Athena), `save()` (S3 + Glue), `llm()` (Bedrock) |
+| `backend.py` | The only file that talks to AWS: `query()` (Athena), `save()` (S3 + Glue), `llm()` (Bedrock, or Groq with `LLM=groq`) |
 | `ingest.py` | Public S3 → `lm_routes`, `lm_stops`, `lm_packages` in own S3 + Glue, with data checks |
 | `model.py` | Failed-delivery risk model, time-split validation, daily risk flags |
 | `agents.py` | SQL agent (self-repair) and analyst agent |
@@ -46,7 +46,7 @@ Data checks run on every ingest. The run stops if a package has no stop, a stop 
 
 ## Results
 
-Model results below come from a local test run on the same data. AWS run results will be added here.
+First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena, analyst report and golden set. Total runtime 409 s; everything below is queryable in Athena.
 
 **Risk model** (trained on 2018-07-19 → 08-13, tested on 356k packages from 08-14 → 08-26):
 
@@ -56,20 +56,27 @@ Model results below come from a local test run on the same data. AWS run results
 | Past fail rate of the station | 0.59 |
 | "Has a time window" rule | 0.58 |
 
-- Failed deliveries are 0.62% of the test packages. In the flagged 1% they are **5.4%, 8.7× the average**.
+- Failed deliveries are 0.62% of the test packages. In the flagged 1% (3,560 packages) they are **5.3%, 8.6× the average**.
+- Accuracy is not used: with 0.62% failures, "everything gets delivered" already scores 99.38%.
 - Packages with a delivery time window fail 4× more often (2.38% vs 0.62%), but they are only 7.8% of all packages.
 - The strongest signal is planned service time at the stop, followed by packages per stop, station, time to the window deadline, and route size.
 
-**SQL agent golden set:** _to fill after the first AWS run_
+**SQL agent golden set: 10 / 10 correct, 0 repairs needed** (`openai/gpt-oss-120b` via Groq, SQL run on Athena). Questions cover joins, grouping, NULL handling and percentages.
+
+**Daily report written by the analyst agent:**
+> *Finding:* Overall fail rate 0.62%; flagged 3560 packages (5.34% fail). Lift 8.6. Top risk stations: DLA8, DLA9, DLA7, DSE4, DCH1.
+> *Automation idea:* Automated rerouting for flagged packages at high-risk stations based on service time and load.
+
+**LLM provider:** Bedrock is the default. New AWS accounts can start with Bedrock quotas at 0; until AWS raises them, `LLM=groq` in `.env` runs the same agents on Groq. Nothing else changes.
 
 ## Run on AWS
 
-1. **IAM role for EC2** with `AmazonS3FullAccess`, `AmazonAthenaFullAccess`, `AWSGlueConsoleFullAccess` and `AmazonBedrockFullAccess`. Check in the Bedrock console that the Nova models are available in `eu-central-1`.
-2. **EC2:** Amazon Linux 2023, `t3.small` in `eu-central-1` with the role attached. Ingest peaks at about 1.5 GB RAM, so add a 2 GB swap file. Open SSH to your own IP only.
+1. **IAM role for EC2** with `AmazonS3FullAccess`, `AmazonAthenaFullAccess`, `AWSGlueConsoleFullAccess` and `AmazonBedrockFullAccess`. Check in Service Quotas that the Bedrock Nova quotas in your region are above 0 (or use `LLM=groq`).
+2. **EC2:** Amazon Linux 2023, `t3.small` in `us-east-2` with the role attached. Ingest peaks at about 1.5 GB RAM, so add a 2 GB swap file. Open SSH to your own IP only.
 3. **Install:**
    ```bash
    sudo dnf install -y git python3.11 python3.11-pip
-   git clone https://github.com/<user>/ops-analyst-agent.git && cd ops-analyst-agent
+   git clone https://github.com/asilburakcan/Ops-Analyst-Agent.git && cd Ops-Analyst-Agent
    python3.11 -m venv venv && venv/bin/pip install -r requirements.txt
    cp .env.example .env   # set S3_BUCKET to a globally unique name
    venv/bin/python pipeline.py --eval   # first run also ingests
@@ -85,6 +92,6 @@ Model results below come from a local test run on the same data. AWS run results
 
 Ask the SQL agent a single question: `venv/bin/python agents.py "Which station has the highest failed delivery rate?"`
 
-**Cost:** Downloads from the open-data bucket are free. The data in our S3 is 86 MB of Parquet (465 MB of JSON before) (cents per month). Athena charges $5 per TB scanned and Bedrock costs a few cents per run. Most of the cost is EC2 `t3.small` while it is running, about $0.024 per hour. Stop the instance when you don't need the daily run.
+**Cost:** Downloads from the open-data bucket are free. The data in our S3 is 124 MB (Parquet tables, results and Athena output; the source JSON is 465 MB), a few cents per month. Athena charges $5 per TB scanned and an LLM run costs a few cents. Most of the cost is EC2 `t3.small` while it is running, about $0.024 per hour. Stop the instance when you don't need the daily run.
 
 **Safety:** The agent may only run a single `SELECT`, and write keywords are blocked. Give the Athena workgroup a bytes-scanned limit per query. No access keys are stored on the server.

@@ -60,12 +60,13 @@ def run():
         rows.append({"run_id": run_id, "run_ts": run_ts, "question": q, "generated_sql": sql,
                      "executed": int(df is not None), "repairs": repairs, "correct": ok})
         print(f"  {'CORRECT' if ok else 'WRONG  '} | repairs={repairs} | {q[:60]}")
+        time.sleep(b.LLM_PAUSE)
 
     out = pd.DataFrame(rows)
     metrics = pd.DataFrame([{"run_id": run_id, "run_ts": run_ts, "questions": len(out),
                              "execution_rate": round(out.executed.mean(), 3), "accuracy": round(out.correct.mean(), 3),
                              "avg_repairs": round(out.repairs.mean(), 2),
-                             "sql_model": b.SQL_MODEL, "analyst_model": b.ANALYST_MODEL}])
+                             "llm": b.LLM, "sql_model": b.SQL_MODEL, "analyst_model": b.ANALYST_MODEL}])
     b.save(out, "agent_results")
     b.save(metrics, "agent_metrics")
     return metrics.iloc[0].to_dict()

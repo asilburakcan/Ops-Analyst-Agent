@@ -1,7 +1,7 @@
 """The only file that talks to AWS.
 
 Data : S3 (Parquet) + Glue Data Catalog, queried with Athena
-LLM  : Bedrock
+LLM  : Bedrock (LLM=bedrock, default) or Groq (LLM=groq) - one setting, same agents
 Credentials come from the EC2 instance role (or `aws configure` on a laptop). No keys in code.
 """
 import os
@@ -15,8 +15,14 @@ load_dotenv()
 REGION = os.getenv("AWS_REGION", "eu-central-1")
 BUCKET = os.environ["S3_BUCKET"]
 DATABASE = os.getenv("GLUE_DATABASE", "last_mile")
-SQL_MODEL = os.getenv("SQL_MODEL", "eu.amazon.nova-pro-v1:0")
-ANALYST_MODEL = os.getenv("ANALYST_MODEL", "eu.amazon.nova-2-lite-v1:0")
+LLM = os.getenv("LLM", "bedrock")
+if LLM == "groq":
+    SQL_MODEL = os.getenv("GROQ_SQL_MODEL", "openai/gpt-oss-120b")
+    ANALYST_MODEL = os.getenv("GROQ_ANALYST_MODEL", "openai/gpt-oss-20b")
+else:
+    SQL_MODEL = os.getenv("SQL_MODEL", "eu.amazon.nova-pro-v1:0")
+    ANALYST_MODEL = os.getenv("ANALYST_MODEL", "eu.amazon.nova-2-lite-v1:0")
+LLM_PAUSE = 15 if LLM == "groq" else 0  # Groq free tier: tokens-per-minute limit
 TABLES = ["lm_routes", "lm_stops", "lm_packages"]  # source data; result tables are added by the jobs
 
 session = boto3.Session(region_name=REGION)
@@ -40,7 +46,11 @@ def exists(table):
 
 
 def llm(model, messages):
-    """One Bedrock chat call. messages: [{"role": "system" | "user" | "assistant", "content": str}]"""
+    """One chat call. messages: [{"role": "system" | "user" | "assistant", "content": str}]"""
+    if LLM == "groq":
+        from groq import Groq
+        r = Groq(api_key=os.environ["GROQ_API_KEY"]).chat.completions.create(model=model, temperature=0, messages=messages)
+        return r.choices[0].message.content or ""
     r = bedrock.converse(
         modelId=model,
         system=[{"text": m["content"]} for m in messages if m["role"] == "system"],

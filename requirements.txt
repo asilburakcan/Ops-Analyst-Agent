@@ -4,3 +4,4 @@ lightgbm
 python-dotenv
 boto3
 awswrangler
+groq
