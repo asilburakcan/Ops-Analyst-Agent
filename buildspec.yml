@@ -1,0 +1,18 @@
+# CodeBuild: check the code before it reaches the server. A failure here stops the deploy.
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip install -q -r requirements.txt
+  build:
+    commands:
+      - python -m py_compile *.py
+      - S3_BUCKET=build-check python -c "import backend, ingest, model, agents, eval, pipeline; print(len(eval.GOLDEN), 'golden questions')"
+artifacts:
+  files:
+    - '**/*'
+  exclude-paths:
+    - data/**
+    - venv/**

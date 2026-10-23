@@ -1,0 +1,16 @@
+# CodeDeploy: copy the code to EC2, then install packages and the daily cron job.
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ec2-user/Ops-Analyst-Agent
+file_exists_behavior: OVERWRITE
+permissions:
+  - object: /home/ec2-user/Ops-Analyst-Agent
+    owner: ec2-user
+    group: ec2-user
+hooks:
+  AfterInstall:
+    - location: scripts/deploy.sh
+      timeout: 600
+      runas: ec2-user
