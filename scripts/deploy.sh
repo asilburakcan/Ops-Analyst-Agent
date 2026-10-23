@@ -9,3 +9,22 @@ mkdir -p logs
 JOB="0 5 * * * cd $PWD && venv/bin/python pipeline.py >> logs/pipeline.log 2>&1"
 (crontab -l 2>/dev/null | grep -v 'pipeline.py'; echo "$JOB") | crontab -
 echo "deployed $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> logs/deploys.log
+
+# Streamlit operator view as a service, bound to localhost only (reach it with SSM port forwarding; no open port)
+sudo tee /etc/systemd/system/ops-app.service >/dev/null <<UNIT
+[Unit]
+Description=Ops Analyst Agent Streamlit app
+After=network-online.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=$PWD
+ExecStart=$PWD/venv/bin/streamlit run app.py --server.headless true --server.address 127.0.0.1 --server.port 8501
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+sudo systemctl daemon-reload
+sudo systemctl enable ops-app >/dev/null 2>&1
+sudo systemctl restart ops-app

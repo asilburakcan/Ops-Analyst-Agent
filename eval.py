@@ -1,4 +1,4 @@
-"""Golden-set check of the SQL agent: 10 questions, each with a reference SQL (the ground truth).
+"""Golden-set check of the SQL agent: 11 questions, each with a reference SQL (the ground truth).
 
 python eval.py  -> run all questions, save agent_results + agent_metrics
 """
@@ -31,6 +31,9 @@ GOLDEN = [
     ("Average planned_service_time_seconds of packages per station_code.",
      "SELECT r.station_code, avg(p.planned_service_time_seconds) FROM lm_packages p "
      "JOIN lm_routes r ON p.route_id = r.route_id GROUP BY 1"),
+    ("Which station has the highest failed delivery rate?",  # plain wording: "station" must map to station_code
+     f"SELECT r.station_code, 100.0*avg({FAILED}) FROM lm_packages p JOIN lm_routes r ON p.route_id = r.route_id "
+     "GROUP BY 1 ORDER BY 2 DESC LIMIT 1"),
     ("How many Dropoff stops have no zone_id?",
      "SELECT count(*) FROM lm_stops WHERE type = 'Dropoff' AND zone_id IS NULL"),
 ]
@@ -52,7 +55,7 @@ def same(ref, got):
 
 
 def run():
-    run_id, run_ts = uuid.uuid4().hex[:8], pd.Timestamp.now().floor("s")
+    run_id, run_ts = uuid.uuid4().hex[:8], pd.Timestamp.now(tz="UTC").tz_localize(None).floor("s")
     rows = []
     for q, ref in GOLDEN:
         sql, df, repairs = agents.write_sql(q)

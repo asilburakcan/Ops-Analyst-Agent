@@ -20,7 +20,7 @@ import model
 
 
 def main(args):
-    t0, ts = time.time(), pd.Timestamp.now().floor("s")
+    t0, ts = time.time(), pd.Timestamp.now(tz="UTC").tz_localize(None).floor("s")
     if "--refresh" in args or not all(b.exists(t) for t in b.TABLES):
         print("ingest:", ingest.run())
 

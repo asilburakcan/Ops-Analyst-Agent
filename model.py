@@ -68,7 +68,7 @@ def run(df=None, save=True):
         ["route_id", "stop_id", "package_id", "station_code", "route_date", "risk", "failed"]]
     flags = flags.rename(columns={"failed": "actual_failed"}).astype({"station_code": str})
     if save:
-        ts = pd.Timestamp.now().floor("s")
+        ts = pd.Timestamp.now(tz="UTC").tz_localize(None).floor("s")
         b.save(flags.assign(scan_ts=ts), "risk_flags")
         b.save(pd.DataFrame([{"scan_ts": ts, **metrics}]), "model_metrics")
 
