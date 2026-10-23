@@ -18,7 +18,8 @@ Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── S
         ▲                                           │
         └── risk_flags, model_metrics, daily_reports ◄── model.py + analyst agent
 
-EC2: cron runs `python pipeline.py` every day. Credentials come from the instance IAM role.
+GitHub push ──► CodePipeline: Source ──► CodeBuild (compile + import check) ──► CodeDeploy ──► EC2
+EC2: cron runs `python pipeline.py` every day at 05:00 UTC. Credentials come from the instance IAM role.
 ```
 
 | File | Job |
@@ -29,6 +30,7 @@ EC2: cron runs `python pipeline.py` every day. Credentials come from the instanc
 | `agents.py` | SQL agent (self-repair) and analyst agent |
 | `eval.py` | Golden-set check of the SQL agent |
 | `pipeline.py` | The single entry point that cron triggers |
+| `buildspec.yml`, `appspec.yml`, `scripts/deploy.sh` | CI/CD: build check, deploy to EC2, install packages and the daily cron job |
 
 ## Data
 
@@ -71,27 +73,25 @@ First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena
 
 ## Run on AWS
 
-1. **IAM role for EC2** with `AmazonS3FullAccess`, `AmazonAthenaFullAccess` and `AWSGlueConsoleFullAccess` (add `AmazonBedrockFullAccess` only for `LLM=bedrock`).
-2. **EC2:** Amazon Linux 2023, `t3.small` in `us-east-2` with the role attached. Ingest peaks at about 1.5 GB RAM, so add a 2 GB swap file. Open SSH to your own IP only.
-3. **Install:**
-   ```bash
-   sudo dnf install -y git python3.11 python3.11-pip
-   git clone https://github.com/asilburakcan/Ops-Analyst-Agent.git && cd Ops-Analyst-Agent
-   python3.11 -m venv venv && venv/bin/pip install -r requirements.txt
-   cp .env.example .env   # set S3_BUCKET (globally unique) and GROQ_API_KEY
-   venv/bin/python pipeline.py --eval   # first run also ingests
-   ```
-4. **Daily trigger:**
-   ```bash
-   mkdir -p logs && (crontab -l 2>/dev/null; echo "0 5 * * * cd $PWD && venv/bin/python pipeline.py >> logs/pipeline.log 2>&1") | crontab -
-   ```
-5. **See the output in Athena:**
-   ```sql
-   SELECT * FROM last_mile.daily_reports ORDER BY run_ts DESC LIMIT 5;
-   ```
+**Deployed setup (us-east-2):**
+- **EC2** `t3.small`, Amazon Linux 2023, 2 GB swap. No SSH key, no open inbound port: access is through Systems Manager Session Manager.
+- **IAM instance role** with S3, Athena, Glue and `AmazonSSMManagedInstanceCore`. No access keys on the server; the Groq key sits in a `chmod 600` `.env` that deploys never overwrite.
+- **CI/CD:** every push to `main` runs CodePipeline. CodeBuild compiles the code and imports every module; a failure stops the deploy. CodeDeploy copies the code to EC2 and `scripts/deploy.sh` updates packages and the cron job.
+- **Daily run:** cron starts `pipeline.py` at 05:00 UTC. Results land in S3 and are queryable in Athena:
+  ```sql
+  SELECT run_ts, auc, lift, agent_accuracy, finding FROM last_mile.daily_reports ORDER BY run_ts DESC LIMIT 5;
+  ```
+
+**Set it up yourself:**
+1. IAM role for EC2: `AmazonS3FullAccess`, `AmazonAthenaFullAccess`, `AWSGlueConsoleFullAccess`, `AmazonSSMManagedInstanceCore` (add `AmazonBedrockFullAccess` only for `LLM=bedrock`).
+2. EC2 with that role, 20 GiB disk. Install `git python3.11 cronie`, a 2 GB swap file and the CodeDeploy agent.
+3. On the server: clone the repo, create `venv`, write `.env` from `.env.example`, run `venv/bin/python pipeline.py --eval` once (it also ingests).
+4. CodeDeploy application + deployment group (EC2 tag `Name`), then a CodePipeline: GitHub source → CodeBuild (`buildspec.yml`) → CodeDeploy.
+
+**About the data:** the dataset is historical (July–August 2018), so each daily run scores the same held-out days. The pipeline is built for live data: only the ingest source would change.
 
 Ask the SQL agent a single question: `venv/bin/python agents.py "Which station has the highest failed delivery rate?"`
 
-**Cost:** Downloads from the open-data bucket are free. The data in our S3 is 124 MB (Parquet tables, results and Athena output; the source JSON is 465 MB), a few cents per month. Athena charges $5 per TB scanned and an LLM run costs a few cents. Most of the cost is EC2 `t3.small` while it is running, about $0.024 per hour. Stop the instance when you don't need the daily run.
+**Cost:** Downloads from the open-data bucket are free. The data in our S3 is 124 MB (Parquet tables, results and Athena output; the source JSON is 465 MB), a few cents per month. Athena charges $5 per TB scanned and an LLM run costs a few cents. Most of the cost is EC2 `t3.small` while it is running (about $0.024 per hour, ~$17/month). CodeBuild and CodeDeploy cost cents or nothing at this volume. Stop the instance when you don't need the daily run.
 
-**Safety:** The agent may only run a single `SELECT`, and write keywords are blocked. Give the Athena workgroup a bytes-scanned limit per query. No access keys are stored on the server.
+**Safety:** The agent may only run a single `SELECT`, and write keywords are blocked. Give the Athena workgroup a bytes-scanned limit per query. No access keys are stored on the server and no inbound port is open.
