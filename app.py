@@ -20,7 +20,7 @@ EXAMPLES = ["Which station has the highest failed delivery rate?",
 
 st.set_page_config(page_title="Ops Analyst Agent", page_icon="assets/icon.svg", layout="wide")
 st.logo("assets/logo.svg", size="large", link="https://github.com/asilburakcan/Ops-Analyst-Agent")
-ACCENT, MUTED = "#5B8DEF", "#F2994A"
+ACCENT, MUTED = "#FF9900", "#E5484D"  # flagged, actually failed
 
 
 @st.cache_data(ttl=600, show_spinner=False)
@@ -61,13 +61,14 @@ TEXT = {
         h_finding="What the scan shows, with the key numbers.",
         h_cause="A hypothesis, given only when the data compares groups; otherwise the check that would test it.",
         h_idea="A manual step this finding suggests automating.",
-        h_chart="Per station: packages the model flagged (blue) and how many of them really failed (orange).",
+        h_chart="Per station: packages the model flagged (orange) and how many of them really failed (red).",
         h_table="Packages with the highest predicted risk. 'Failed (real)' is the true outcome in the data.",
         h_ask="Ask in plain language. The SQL agent writes and runs read-only Athena SQL and repairs its own errors; "
               "the analyst agent explains the result. Every question is saved to agent_questions.",
         legend_flagged="flagged", legend_failed="actually failed",
+        note="Personal portfolio project, not affiliated with Amazon.",
         chart="Flagged packages by station", axis="flagged packages (orange: actually failed)",
-        chart_sub="Orange is the real outcome in the data: the check that the flags are right.",
+        chart_sub="Red is the real outcome in the data: the check that the flags are right.",
         table="Riskiest packages", table_sub="Model prediction for today's packages",
         col_station="Station", col_stop="Stop", col_risk="Risk", col_failed="Failed (real)",
         ask="Ask the data",
@@ -107,13 +108,14 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         h_finding="Taramanın gösterdiği sonuç ve önemli sayılar.",
         h_cause="Bir hipotez; sadece veri grupları karşılaştırıyorsa verilir, yoksa bunu test edecek kontrol yazılır.",
         h_idea="Bu bulgunun otomatikleştirmeyi önerdiği elle yapılan adım.",
-        h_chart="İstasyon başına: modelin işaretlediği paketler (mavi) ve bunlardan gerçekte başarısız olanlar (turuncu).",
+        h_chart="İstasyon başına: modelin işaretlediği paketler (turuncu) ve bunlardan gerçekte başarısız olanlar (kırmızı).",
         h_table="Tahmini riski en yüksek paketler. 'Başarısız (gerçek)', verideki gerçek sonuç.",
         h_ask="Soruyu doğal dille yaz. SQL ajanı salt okunur Athena SQL'ini yazıp çalıştırır ve hatasını kendi düzeltir; "
               "analist ajanı sonucu yorumlar. Her soru agent_questions tablosuna kaydedilir.",
         legend_flagged="işaretlenen", legend_failed="gerçekte başarısız",
+        note="Kişisel portföy projesi; Amazon ile bağlantısı yoktur.",
         chart="İstasyona göre işaretlenen paketler", axis="işaretlenen paketler (turuncu: gerçekte başarısız)",
-        chart_sub="Turuncu, verideki gerçek sonuç: işaretlerin doğruluğunun kontrolü.",
+        chart_sub="Kırmızı, verideki gerçek sonuç: işaretlerin doğruluğunun kontrolü.",
         table="En riskli paketler", table_sub="Modelin bugünkü paketler için tahmini",
         col_station="İstasyon", col_stop="Durak", col_risk="Risk", col_failed="Başarısız (gerçek)",
         ask="Veriye sor",
@@ -163,7 +165,7 @@ CSS = """<style>
 .tip{position:relative;flex:none;width:1rem;height:1rem;border:1px solid #8A93A3;border-radius:50%;color:#8A93A3;
   font-size:.68rem;display:inline-flex;align-items:center;justify-content:center;cursor:help}
 .tip:hover::after{content:attr(data-tip);position:absolute;top:1.4rem;right:-.5rem;width:16rem;white-space:normal;
-  background:#1F2633;color:#E6E9F0;padding:.55rem .7rem;border-radius:.5rem;font-size:.8rem;line-height:1.4;
+  background:#131A22;color:#E6E9F0;padding:.55rem .7rem;border-radius:.5rem;font-size:.8rem;line-height:1.4;
   z-index:1000;box-shadow:0 6px 18px rgba(0,0,0,.45)}
 .kpi:first-child .tip:hover::after{right:auto;left:-.5rem}
 .bars .row{display:grid;grid-template-columns:3.2rem 1fr 3rem;align-items:center;gap:.6rem;height:1.55rem;font-size:.85rem}
@@ -219,13 +221,19 @@ def bar_chart(df):
 
 
 # language switch pinned to the top bar, level with the logo
-st.html("<style>.st-key-lang{position:fixed;top:.55rem;right:1rem;z-index:999991;width:auto}</style>")
+st.html("""<style>
+header[data-testid="stHeader"]{background:#FFFFFF;border-bottom:3px solid #FF9900}
+[data-testid="stMainBlockContainer"],.block-container{padding-top:4.2rem}
+.st-key-lang{position:fixed;top:.55rem;right:1rem;z-index:999991;width:auto}
+.st-key-lang button{background:#FFFFFF !important;color:#232F3E !important;border-color:#D5DBDB !important}
+.st-key-lang button[aria-checked="true"]{background:#FF9900 !important;border-color:#FF9900 !important}
+</style>""")
 with st.container(key="lang"):
     lang = "tr" if st.segmented_control("Language", ["EN", "TR"], default="EN",
                                         label_visibility="collapsed") == "TR" else "en"
 T = TEXT[lang]
 st.title(T["title"])
-st.caption(T["sub"].format(run=f"{r.run_ts:%Y-%m-%d %H:%M}", day=r.today_from))
+st.caption(T["sub"].format(run=f"{r.run_ts:%Y-%m-%d %H:%M}", day=r.today_from) + " · " + T["note"])
 
 today, ask, how = st.tabs(T["tabs"])
 

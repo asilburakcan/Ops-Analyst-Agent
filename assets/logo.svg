@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="260" height="48" viewBox="0 0 260 48">
-  <rect x="2" y="4" width="40" height="40" rx="10" fill="#5B8DEF"/>
-  <path d="M12 33 C17 33 17 15 22 15 S27 33 32 33" fill="none" stroke="#0B0F17" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="12" cy="33" r="3.5" fill="#0B0F17"/>
-  <circle cx="32" cy="33" r="3.5" fill="#0B0F17"/>
-  <text x="54" y="31" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="19" font-weight="600" fill="#E6E9F0">Ops Analyst Agent</text>
+  <rect x="2" y="4" width="40" height="40" rx="10" fill="#FF9900"/>
+  <path d="M12 33 C17 33 17 15 22 15 S27 33 32 33" fill="none" stroke="#232F3E" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="12" cy="33" r="3.5" fill="#232F3E"/>
+  <circle cx="32" cy="33" r="3.5" fill="#232F3E"/>
+  <text x="54" y="31" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="19" font-weight="600" fill="#232F3E">Ops Analyst Agent</text>
 </svg>

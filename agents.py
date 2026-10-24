@@ -26,8 +26,9 @@ Terms (use them exactly; packages, stops and routes are different units):
 {GLOSSARY}
 Rules for root_cause_hypothesis:
 - Name a cause only if the result itself compares groups (e.g. fail rate with vs without a time window).
-- If the result only lists values (a top station, a maximum, a count), it shows no cause: write
-  "Not shown by this result; check <the comparison that would test it>".
+- If the result only lists values (a top station, a maximum, a count), it shows no cause: say so in one short
+  clause, then name one concrete comparison that would test a cause (for example fail rate with vs without
+  time windows at that station). Write it in the answer language, with no placeholders.
 - A result can combine separate answers (e.g. a station and a package size); never link them as cause and effect.
 Return JSON only: {{"finding": "max 30 words, with key numbers and correct units",
 "root_cause_hypothesis": "max 25 words, only from fields in the data; if the data cannot explain it, name the check that would",
