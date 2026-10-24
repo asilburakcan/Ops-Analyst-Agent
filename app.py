@@ -32,6 +32,7 @@ def load():
     return report, flags, golden
 
 
+@st.cache_data(ttl=60, show_spinner=False)
 def questions_today():
     if not b.exists("agent_questions"):
         return 0
@@ -61,7 +62,9 @@ TEXT = {
         h_gold="Share of golden-set questions where the agent's SQL returned the same result as the reference SQL.",
         report="Today's report", report_sub="Written by the analyst agent from the model's scan",
         finding="Finding", cause="Root cause", idea="Automation idea",
-        h_report="The analyst agent reads the model's scan and writes three short notes every morning.",
+        h_report="Written automatically every day at 05:00 UTC (08:00 Turkey): cron on EC2 runs pipeline.py, which reads the "
+                 "packages from Athena, scores them with the LightGBM model and asks the analyst agent for these three notes.",
+        quota="{left} of {n} questions left today · shared demo limit, resets at 00:00 UTC",
         h_finding="What the scan shows, with the key numbers.",
         h_cause="A hypothesis, given only when the data compares groups; otherwise the check that would test it.",
         h_idea="A manual step this finding suggests automating.",
@@ -113,7 +116,9 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         h_gold="Ajanın SQL'inin referans SQL ile aynı sonucu verdiği altın set sorularının oranı.",
         report="Bugünkü rapor", report_sub="Analist ajanı tarafından modelin taramasından yazıldı",
         finding="Bulgu", cause="Kök neden", idea="Otomasyon önerisi",
-        h_report="Analist ajanı her sabah modelin taramasını okur ve üç kısa not yazar.",
+        h_report="Her gün 05:00 UTC'de (TR 08:00) otomatik yazılır: EC2'deki cron pipeline.py'yi çalıştırır; paketler "
+                 "Athena'dan okunur, LightGBM modeliyle puanlanır ve analist ajanı bu üç notu yazar.",
+        quota="Bugün {n} sorudan {left} kaldı · paylaşılan demo limiti, 00:00 UTC'de sıfırlanır",
         h_finding="Taramanın gösterdiği sonuç ve önemli sayılar.",
         h_cause="Bir hipotez; sadece veri grupları karşılaştırıyorsa verilir, yoksa bunu test edecek kontrol yazılır.",
         h_idea="Bu bulgunun otomatikleştirmeyi önerdiği elle yapılan adım.",
@@ -317,6 +322,7 @@ def answer(question, status):
                           "question": question, "generated_sql": sql, "executed": int(df is not None),
                           "repairs": repairs, "finding": analysis.get("finding", "")}]),
            "agent_questions")
+    questions_today.clear()
 
 
 # top bar, like the AWS console: question box in the middle; region, GitHub and language on the right
@@ -375,6 +381,7 @@ with today:
 with ask:
     with st.container(key="box-ask"):
         box_header(T["ask"], T["ask_sub"], T["h_ask"])
+        st.caption(T["quota"].format(left=max(DAILY_LIMIT - questions_today(), 0), n=DAILY_LIMIT))
         pick = st.pills("Examples", EXAMPLES, label_visibility="collapsed", key="examples")
         with st.form("ask", border=False):
             question = st.text_input("Question", value=pick or "", label_visibility="collapsed",
