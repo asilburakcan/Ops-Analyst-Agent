@@ -238,14 +238,9 @@ def report_text(finding, cause, idea, lang):
 report, flags, golden = load()
 r = report.iloc[0]
 
-# Cloudscape tokens per theme (light = AWS console, dark = Cloudscape dark mode)
-TOKENS = {
-    "light": dict(box="#FFFFFF", border="#C6C6CD", divider="#E9EBED", text="#000716", muted="#5F6B7A", link="#0972D3",
-                  shadow="0 1px 1px 1px rgba(0,7,22,.06), 0 1px 4px 1px rgba(0,7,22,.08)"),
-    "dark": dict(box="#192534", border="#414D5C", divider="#414D5C", text="#FBFBFB", muted="#8D99A8", link="#539FE5",
-                 shadow="0 1px 4px 1px rgba(0,7,22,.55)"),
-}
-V = TOKENS["light" if st.context.theme.type == "light" else "dark"]
+# Cloudscape (AWS console) light tokens
+V = dict(box="#FFFFFF", border="#C6C6CD", divider="#E9EBED", text="#000716", muted="#5F6B7A", link="#0972D3",
+         shadow="0 1px 1px 1px rgba(0,7,22,.06), 0 1px 4px 1px rgba(0,7,22,.08)")
 
 st.html(f"""<style>
 :root{{--box:{V["box"]};--border:{V["border"]};--divider:{V["divider"]};--text:{V["text"]};--muted:{V["muted"]};
@@ -271,13 +266,12 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
   border:1px solid #7D8998 !important;border-radius:8px;min-height:2.1rem}}
 .st-key-topsearch input{{background:transparent !important;color:#FFFFFF !important;padding:.3rem .6rem .3rem 2.1rem !important;font-size:.9rem}}
 .st-key-topsearch input::placeholder{{color:#B6BEC9 !important;font-style:italic}}
-.st-key-lang{{position:fixed;top:.42rem;right:3.4rem;z-index:999991;width:auto;align-items:center;gap:1rem}}
+.st-key-lang{{position:fixed;top:.42rem;right:1.2rem;z-index:999991;width:auto;align-items:center;gap:1rem}}
 .st-key-lang button{{background:transparent !important;color:#FFFFFF !important;border-color:rgba(255,255,255,.35) !important}}
 .st-key-lang button[aria-checked="true"]{{background:#FF9900 !important;color:#0F141A !important;border-color:#FF9900 !important}}
 .topright{{display:flex;align-items:center;gap:1rem;color:#FFFFFF;font-size:.88rem;white-space:nowrap}}
 .topright a{{display:flex;color:#FFFFFF}} .topright .sep{{width:1px;height:1.3rem;background:#5F6B7A}}
 @media (max-width:1000px){{.st-key-topsearch,.topright .region,.topright .sep{{display:none}}}}
-header [data-testid="stMainMenu"] button{{color:#FFFFFF}}
 .crumb{{font-size:.88rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
 .boxdesc{{color:var(--muted);font-size:.88rem;line-height:1.45;margin:.35rem 0 .9rem}}
 .kv{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));row-gap:1rem}}

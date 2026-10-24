@@ -1,12 +1,11 @@
-# Look and feel based on Cloudscape, AWS's open-source design system (Apache-2.0)
+# Look and feel based on Cloudscape, AWS's open-source design system (Apache-2.0). Light theme only, like the AWS console.
 [theme]
+base = "light"
 font = "Open Sans:https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap, sans-serif"
 headingFont = "Open Sans:https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap, sans-serif"
 baseFontSize = 15
 baseRadius = "0.5rem"
 showWidgetBorder = true
-
-[theme.light]
 primaryColor = "#FF9900"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F2F3F3"
@@ -16,18 +15,8 @@ borderColor = "#C6C6CD"
 dataframeBorderColor = "#E9EBED"
 dataframeHeaderBackgroundColor = "#F2F3F3"
 
-[theme.dark]
-primaryColor = "#FF9900"
-backgroundColor = "#0F1B2A"
-secondaryBackgroundColor = "#192534"
-textColor = "#FBFBFB"
-linkColor = "#539FE5"
-borderColor = "#414D5C"
-dataframeBorderColor = "#414D5C"
-dataframeHeaderBackgroundColor = "#232F3E"
-
 [client]
-toolbarMode = "viewer"  # keeps the menu with the light/dark switch, hides developer options
+toolbarMode = "minimal"  # no menu: one fixed light theme, nothing to switch
 
 [browser]
 gatherUsageStats = false
