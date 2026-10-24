@@ -156,12 +156,12 @@ def card(title, text, tip):
 
 CSS = """<style>
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:.5rem}
-.kpi{border:1px solid rgba(250,250,250,.18);border-radius:.6rem;padding:.9rem 1rem}
+.kpi{border:1px solid rgba(128,128,128,.35);border-radius:.6rem;padding:.9rem 1rem}
 .kpi .lab{display:flex;justify-content:space-between;gap:.4rem;font-size:.9rem;white-space:nowrap}
 .kpi .lab span:first-child{overflow:hidden;text-overflow:ellipsis}
 .kpi .val{font-size:2.2rem;line-height:1.2;margin:.35rem 0 .45rem;font-variant-numeric:tabular-nums}
 .pill{display:inline-block;font-size:.8rem;padding:.1rem .55rem;border-radius:99px}
-.good{background:rgba(33,195,84,.15);color:#7EE2A0}.muted{background:rgba(250,250,250,.08);color:#B8BFCC}
+.good{background:rgba(46,164,79,.16);color:#3FB950}.muted{background:rgba(128,128,128,.16);opacity:.85}
 .tip{position:relative;flex:none;width:1rem;height:1rem;border:1px solid #8A93A3;border-radius:50%;color:#8A93A3;
   font-size:.68rem;display:inline-flex;align-items:center;justify-content:center;cursor:help}
 .tip:hover::after{content:attr(data-tip);position:absolute;top:1.4rem;right:-.5rem;width:16rem;white-space:normal;
@@ -171,8 +171,8 @@ CSS = """<style>
 .bars .row{display:grid;grid-template-columns:3.2rem 1fr 3rem;align-items:center;gap:.6rem;height:1.55rem;font-size:.85rem}
 .bars .track{position:relative;height:.85rem}
 .bars .b{position:absolute;left:0;top:0;height:100%;border-radius:0 3px 3px 0;animation:grow 1s cubic-bezier(.2,.8,.2,1) both}
-.bars .num{text-align:right;color:#B8BFCC;font-variant-numeric:tabular-nums}
-.legend{display:flex;gap:1rem;font-size:.8rem;color:#B8BFCC;margin:.2rem 0 .6rem}
+.bars .num{text-align:right;opacity:.7;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:1rem;font-size:.8rem;opacity:.8;margin:.2rem 0 .6rem}
 .legend i{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}
 @keyframes grow{from{width:0}}
 </style>"""
@@ -222,11 +222,12 @@ def bar_chart(df):
 
 # language switch pinned to the top bar, level with the logo
 st.html("""<style>
-header[data-testid="stHeader"]{background:#FFFFFF;border-bottom:3px solid #FF9900}
+header[data-testid="stHeader"]{background:#131A22;border-bottom:3px solid #FF9900}
 [data-testid="stMainBlockContainer"],.block-container{padding-top:4.2rem}
-.st-key-lang{position:fixed;top:.55rem;right:1rem;z-index:999991;width:auto}
-.st-key-lang button{background:#FFFFFF !important;color:#232F3E !important;border-color:#D5DBDB !important}
-.st-key-lang button[aria-checked="true"]{background:#FF9900 !important;border-color:#FF9900 !important}
+.st-key-lang{position:fixed;top:.55rem;right:3.6rem;z-index:999991;width:auto}
+.st-key-lang button{background:transparent !important;color:#FFFFFF !important;border-color:rgba(255,255,255,.35) !important}
+.st-key-lang button[aria-checked="true"]{background:#FF9900 !important;color:#131A22 !important;border-color:#FF9900 !important}
+header [data-testid="stMainMenu"] button{color:#FFFFFF}
 </style>""")
 with st.container(key="lang"):
     lang = "tr" if st.segmented_control("Language", ["EN", "TR"], default="EN",

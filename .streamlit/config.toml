@@ -1,14 +1,25 @@
 [theme]
-base = "dark"
+font = "sans serif"
+baseRadius = "0.6rem"
+
+# dark: AWS navy page, cards a shade lighter
+[theme.dark]
 primaryColor = "#FF9900"
 backgroundColor = "#232F3E"
 secondaryBackgroundColor = "#2C3B4F"
 textColor = "#F2F3F3"
-font = "sans serif"
-baseRadius = "0.6rem"
+linkColor = "#539FE5"
+
+# light: AWS console look, white page and cards with grey borders
+[theme.light]
+primaryColor = "#FF9900"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F3F3"
+textColor = "#16191F"
+linkColor = "#0972D3"
 
 [client]
-toolbarMode = "minimal"
+toolbarMode = "viewer"  # keeps the menu with the light/dark switch, hides developer options
 
 [browser]
 gatherUsageStats = false
