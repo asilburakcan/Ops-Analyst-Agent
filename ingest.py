@@ -93,7 +93,7 @@ def flatten():
         "error_stops_without_visit_order": int(stops.visit_order.isna().sum()),
         "error_duplicate_rows": int(packages.duplicated(keys + ["package_id"]).sum()),
         "obs_dropoffs_without_zone": int(((stops.type == "Dropoff") & stops.zone_id.isna()).sum()),
-        "obs_packages_at_2plus_stops": int(packages.duplicated(["route_id", "package_id"]).sum()),  # attempted, then delivered elsewhere
+        "obs_packages_at_2plus_stops": int(packages.groupby(["route_id", "package_id"]).stop_id.nunique().gt(1).sum()),  # attempted, then delivered elsewhere
     }
     if any(v for k, v in checks.items() if k.startswith("error_")):
         raise ValueError(f"data checks failed: {checks}")

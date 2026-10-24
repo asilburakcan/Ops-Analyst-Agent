@@ -65,7 +65,7 @@ The challenge's evaluation split (`eval_*`) has the same structure and is not us
 
 | Column | Type | Meaning |
 |---|---|---|
-| `route_id`, `stop_id`, `package_id` | string | Key. 1,432 packages appear at two stops of one route: attempted at one, delivered at another |
+| `route_id`, `stop_id`, `package_id` | string | Key. 1,422 packages appear at two or more stops of one route (1,432 extra rows): attempted at one, delivered at another |
 | `scan_status` | string | `DELIVERED`, `DELIVERY_ATTEMPTED`, `REJECTED`; the outcome the model predicts |
 | `tw_start`, `tw_end` | timestamp | Customer time window; NULL if none |
 | `planned_service_time_seconds` | double | Planned hand-over time |

@@ -48,7 +48,7 @@ Every column and term is described in [DATA_DICTIONARY.md](DATA_DICTIONARY.md).
 
 Data checks run on every ingest. The run stops if a package has no stop, a stop has no visit order or a row is duplicated. Two real data facts are reported, not removed:
 - 6,515 dropoff stops have no `zone_id`.
-- 1,432 packages appear at two stops of the same route: attempted at one, delivered at another.
+- 1,422 packages appear at two or more stops of the same route (1,432 extra rows): attempted at one, delivered at another.
 
 ## Results
 
