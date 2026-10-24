@@ -28,7 +28,7 @@ EC2: cron runs `python pipeline.py` every day at 05:00 UTC. Credentials come fro
 | `ingest.py` | Public S3 → `lm_routes`, `lm_stops`, `lm_packages` in own S3 + Glue, with data checks |
 | `model.py` | Failed-delivery risk model, time-split validation, daily risk flags |
 | `agents.py` | SQL agent (self-repair) and analyst agent, both grounded in the glossary of `DATA_DICTIONARY.md` |
-| `DATA_DICTIONARY.md` | Terms, tables and columns; its glossary is loaded into both agents' prompts |
+| `DATA_DICTIONARY.md` | Terms, tables and columns; data terms go to both agents, model terms to the analyst only |
 | `eval.py` | Golden-set check of the SQL agent |
 | `pipeline.py` | The single entry point that cron triggers |
 | `app.py` | Streamlit operator view: today's report, risk flags by station, and a question box for the agents |
@@ -67,7 +67,7 @@ First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena
 - Packages with a delivery time window fail 4× more often (2.38% vs 0.62%), but they are only 7.8% of all packages.
 - The strongest signal is planned service time at the stop, followed by packages per stop, station, time to the window deadline, and route size.
 
-**SQL agent golden set: 11 / 11 correct, 0 repairs needed** (`openai/gpt-oss-120b` via Groq, SQL run on Athena). Questions cover joins, grouping, NULL handling, percentages and plain business wording ("station" → `station_code`). An empty result counts as a failure, so the agent repairs wrong filters too.
+**SQL agent golden set: 12 / 12 correct, 0 repairs needed** (`openai/gpt-oss-120b` via Groq, SQL run on Athena). Questions cover joins, grouping, NULL handling, percentages and plain business wording ("station" → `station_code`). An empty result counts as a failure, so the agent repairs wrong filters too.
 
 **Daily report written by the analyst agent:**
 > *Finding:* Overall fail rate 0.62%; flagged 3560 packages (5.34% fail). Lift 8.6. Top risk stations: DLA8, DLA9, DLA7, DSE4, DCH1.

@@ -2,7 +2,7 @@
 
 Source: [Amazon Last Mile Routing Research Challenge](https://registry.opendata.aws/amazon-last-mile-challenges/) (2021), training split, 6,112 routes from 17 US stations, 2018-07-19 → 2018-08-26. `ingest.py` turns the nested JSON into three flat tables.
 
-The **Glossary** below is also the context both LLM agents receive (`agents.py` loads this section), so the agents and this document always use the same terms.
+The **Glossary** below is the context both LLM agents receive, and **Model terms** go to the analyst agent only (`agents.py` loads both sections). The SQL agent therefore answers from the source data, and the agents and this document always use the same terms.
 
 ## Glossary
 - package: one parcel at one stop; one row of lm_packages, key (route_id, stop_id, package_id). Count packages, not routes, when a result is about packages.
@@ -16,10 +16,12 @@ The **Glossary** below is also the context both LLM agents receive (`agents.py` 
 - executor_capacity_cm3: the van's load capacity. Load ratio = total_volume_cm3 / executor_capacity_cm3.
 - route_score: Amazon's quality rating of the driven route: 'High', 'Medium', 'Low'. Known only after the route.
 - visit_order: the order in which the driver actually visited the stops. Known only after the route.
-- risk: the model's predicted probability that a package's delivery fails (risk_flags.risk).
-- flagged: the riskiest 1% of the day's packages, saved for operator review (risk_flags).
+
+## Model terms
+- risk: the model's predicted probability that a package's delivery fails.
+- flagged: the riskiest 1% of the day's packages, saved for operator review. Flagged packages are a small subset, not all packages.
 - actual_failed: the real outcome of a flagged package (1 = failed); the ground-truth check of a flag.
-- lift: fail rate among flagged packages divided by the average fail rate.
+- lift: fail rate among flagged packages divided by the average fail rate of all scanned packages.
 - held-out days ("today"): the newest 20% of days (2018-08-14 to 2018-08-26). The model never trains on them.
 
 ## Source files → tables

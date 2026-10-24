@@ -17,13 +17,16 @@ import backend as b
 MAX_REPAIRS = 2
 FORBIDDEN = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|merge|unload|msck|call)\b", re.I)
 
-# The glossary in DATA_DICTIONARY.md is the shared vocabulary of both agents and the docs.
+# DATA_DICTIONARY.md is the shared vocabulary of the agents and the docs. The SQL agent sees only the
+# data terms, so it answers from the source tables; the analyst also gets the model terms.
 _DOC = (Path(__file__).parent / "DATA_DICTIONARY.md").read_text(encoding="utf-8")
-GLOSSARY = _DOC.split("## Glossary", 1)[1].split("\n## ", 1)[0].strip()
+GLOSSARY = _DOC.split("## Glossary", 1)[1].split("\n## ", 1)[0].strip()          # data terms: both agents
+MODEL_TERMS = _DOC.split("## Model terms", 1)[1].split("\n## ", 1)[0].strip()   # model terms: analyst only
 
 ANALYST_PROMPT = f"""You are a last-mile operations analyst agent. You get a business question and the data result.
 Terms (use them exactly; packages, stops and routes are different units):
 {GLOSSARY}
+{MODEL_TERMS}
 Rules for root_cause_hypothesis:
 - Name a cause only if the result itself compares groups (e.g. fail rate with vs without a time window).
 - If the result only lists values (a top station, a maximum, a count), it shows no cause: say so in one short

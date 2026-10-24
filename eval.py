@@ -1,4 +1,4 @@
-"""Golden-set check of the SQL agent: 11 questions, each with a reference SQL (the ground truth).
+"""Golden-set check of the SQL agent: 12 questions, each with a reference SQL (the ground truth).
 
 python eval.py  -> run all questions, save agent_results + agent_metrics
 """
@@ -32,6 +32,9 @@ GOLDEN = [
      "SELECT r.station_code, avg(p.planned_service_time_seconds) FROM lm_packages p "
      "JOIN lm_routes r ON p.route_id = r.route_id GROUP BY 1"),
     ("Which station has the highest failed delivery rate?",  # plain wording: "station" must map to station_code
+     f"SELECT r.station_code, 100.0*avg({FAILED}) FROM lm_packages p JOIN lm_routes r ON p.route_id = r.route_id "
+     "GROUP BY 1 ORDER BY 2 DESC LIMIT 1"),
+    ("What is the riskiest station?",  # plain wording; must use the real fail rate, not the model's flags
      f"SELECT r.station_code, 100.0*avg({FAILED}) FROM lm_packages p JOIN lm_routes r ON p.route_id = r.route_id "
      "GROUP BY 1 ORDER BY 2 DESC LIMIT 1"),
     ("How many Dropoff stops have no zone_id?",
