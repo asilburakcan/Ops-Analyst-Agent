@@ -74,7 +74,7 @@ TEXT = {
         ask="Ask the data",
         ask_sub="The SQL agent writes Athena SQL (read-only, self-repairing); the analyst agent explains the result.",
         placeholder="e.g. Top 5 stations by average packages per route", button="Ask",
-        limit="Daily question limit ({n}) reached. Try again tomorrow.", spinner="SQL agent → Athena → analyst agent...",
+        limit="Daily question limit ({n}) reached. Try again tomorrow.", step_sql="Thinking… writing SQL and running it on Athena", step_analyst="Thinking… the analyst is reading the result",
         sql="SQL written by the agent", repaired="Self-repaired {n} time(s).", failed="The query failed after {n} repairs.",
         how="""**Every day (cron on EC2, 05:00 UTC):** `pipeline.py` reads the packages from Athena, the LightGBM model scores
 them, the riskiest 1% are saved to `risk_flags`, and the analyst agent writes the report to `daily_reports`.
@@ -122,7 +122,7 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         ask_sub="SQL ajanı Athena SQL'i yazar (salt okunur, hatasını kendi düzeltir); analist ajanı sonucu yorumlar. "
                 "Sorular İngilizce en iyi sonucu verir.",
         placeholder="örn. Top 5 stations by average packages per route", button="Sor",
-        limit="Günlük soru limitine ({n}) ulaşıldı. Yarın tekrar deneyin.", spinner="SQL ajanı → Athena → analist ajanı...",
+        limit="Günlük soru limitine ({n}) ulaşıldı. Yarın tekrar deneyin.", step_sql="Düşünüyor… SQL yazılıyor ve Athena'da çalıştırılıyor", step_analyst="Düşünüyor… analist sonucu yorumluyor",
         sql="Ajanın yazdığı SQL", repaired="{n} kez kendini düzeltti.", failed="Sorgu {n} düzeltmeden sonra başarısız oldu.",
         how="""**Her gün (EC2'de cron, 05:00 UTC):** `pipeline.py` paketleri Athena'dan okur, LightGBM modeli puanlar,
 en riskli %1 `risk_flags` tablosuna kaydedilir ve analist ajanı raporu `daily_reports` tablosuna yazar.
@@ -176,6 +176,9 @@ CSS = """<style>
 .legend i{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}
 @keyframes grow{from{width:0}}
 </style>"""
+
+THINKING = ("<style>.thinking{{color:#8A93A3;font-size:.92rem;animation:pulse 1.4s ease-in-out infinite}}"
+            "@keyframes pulse{{0%,100%{{opacity:.3}}50%{{opacity:1}}}}</style><div class='thinking'>{}</div>")
 
 COUNT_UP = """<script>
 document.querySelectorAll('.val[data-to]:not([data-done])').forEach(el => {
@@ -289,11 +292,19 @@ with ask:
         submitted = st.form_submit_button(T["button"], type="primary")
 
     if submitted and question:
+        status = st.empty()  # pulsing grey line under the button while the agents work
+        status.html(THINKING.format(T["step_sql"]))
         if questions_today() >= DAILY_LIMIT:
+            status.empty()
             st.warning(T["limit"].format(n=DAILY_LIMIT))
         else:
-            with st.spinner(T["spinner"]):
-                out = agents.ask(question, lang)
+            sql, df, repairs = agents.write_sql(question)
+            analysis = {}
+            if df is not None:
+                status.html(THINKING.format(T["step_analyst"]))
+                analysis = agents.analyze(question, df.head(20).to_dict("records"), lang)
+            status.empty()
+            out = {"sql": sql, "df": df, "repairs": repairs, "analysis": analysis}
             with st.expander(T["sql"], expanded=True):
                 st.code(out["sql"], language="sql")
                 if out["repairs"]:
