@@ -8,7 +8,7 @@ The **Glossary** below is the context both LLM agents receive, and **Model terms
 - package: one parcel at one stop; one row of lm_packages, key (route_id, stop_id, package_id). Count packages, not routes, when a result is about packages.
 - route: one van's delivery run on one day from one station; one row of lm_routes.
 - stop: one place on a route; one row of lm_stops, key (route_id, stop_id). type 'Station' is the depot itself (visit_order 0, never has packages); type 'Dropoff' is a customer stop. Do not filter on type unless the question is about stops.
-- station: the delivery station (depot) a route starts from = lm_routes.station_code, 17 values such as DLA3. "Station" in a question means station_code.
+- station: the delivery station (depot) a route starts from = lm_routes.station_code, 17 values. The code is D (delivery station) + city (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, AU Austin) + a number: DLA3 is Los Angeles station 3. "Station" in a question means station_code.
 - failed delivery: scan_status <> 'DELIVERED', i.e. 'DELIVERY_ATTEMPTED' or 'REJECTED'. Fail rate = share of packages with a failed delivery (about 0.76% overall).
 - time window: the customer's delivery slot tw_start to tw_end; both NULL when the package has none (has_time_window = false for about 92% of packages).
 - planned_service_time_seconds: planned time to hand the package over at the stop.

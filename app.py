@@ -109,15 +109,21 @@ TEXT = {
         h_cause="A hypothesis, given only when the data compares groups; otherwise the check that would test it.",
         h_idea="A manual step this finding suggests automating.",
         h_chart="Per station: packages the model flagged (orange) and how many of them really failed (red).",
-        h_table="Packages with the highest predicted risk. 'Failed (real)' is the true outcome in the data.",
+        h_table="The 15 packages the model ranks as most likely to fail. 'Outcome' is what really happened in the data; "
+                "the model never sees it, so it checks the ranking.",
         h_ask="Ask in plain language. The SQL agent writes and runs read-only Athena SQL and repairs its own errors; "
               "the analyst agent explains the result. Every question is saved to agent_questions.",
         legend_flagged="flagged", legend_failed="actually failed",
+        codes="Station codes: D = delivery station, then the city (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, "
+              "AU Austin) and a number. DLA8 is Los Angeles station 8.",
         note="Personal portfolio project, not affiliated with Amazon.",
         chart="Flagged packages by station", axis="flagged packages (orange: actually failed)",
         chart_sub="Red is the real outcome in the data: the check that the flags are right.",
         table="Riskiest packages", table_sub="Model prediction for today's packages",
-        col_station="Station", col_stop="Stop", col_risk="Risk", col_failed="Failed (real)",
+        col_station="Station", col_stop="Stop", col_risk="Risk score", col_failed="Outcome", col_pkg="Package",
+        h_risk="A ranking score from the model: higher means more likely to fail. It is not a calibrated probability; "
+               "among the flagged packages only about 1 in 20 really fails.",
+        o_failed="✗ Failed", o_ok="✓ Delivered",
         ask="Ask the data",
         ask_sub="The SQL agent writes Athena SQL (read-only, self-repairing); the analyst agent explains the result.",
         placeholder="e.g. Top 5 stations by average packages per route", button="Ask",
@@ -187,15 +193,21 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         h_cause="Bir hipotez; sadece veri grupları karşılaştırıyorsa verilir, yoksa bunu test edecek kontrol yazılır.",
         h_idea="Bu bulgunun otomatikleştirmeyi önerdiği elle yapılan adım.",
         h_chart="İstasyon başına: modelin işaretlediği paketler (turuncu) ve bunlardan gerçekte başarısız olanlar (kırmızı).",
-        h_table="Tahmini riski en yüksek paketler. 'Başarısız (gerçek)', verideki gerçek sonuç.",
+        h_table="Modelin teslim edilememe ihtimali en yüksek gördüğü 15 paket. 'Sonuç' verideki gerçek sonuç; "
+                "model bunu görmez, bu yüzden sıralamayı kontrol eder.",
         h_ask="Soruyu doğal dille yaz. SQL ajanı salt okunur Athena SQL'ini yazıp çalıştırır ve hatasını kendi düzeltir; "
               "analist ajanı sonucu yorumlar. Her soru agent_questions tablosuna kaydedilir.",
         legend_flagged="işaretlenen", legend_failed="gerçekte başarısız",
+        codes="İstasyon kodları: D = teslimat istasyonu, ardından şehir (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, "
+              "AU Austin) ve numara. DLA8, Los Angeles'taki 8 numaralı istasyon.",
         note="Kişisel portföy projesi; Amazon ile bağlantısı yoktur.",
         chart="İstasyona göre işaretlenen paketler", axis="işaretlenen paketler (turuncu: gerçekte başarısız)",
         chart_sub="Kırmızı, verideki gerçek sonuç: işaretlerin doğruluğunun kontrolü.",
         table="En riskli paketler", table_sub="Modelin bugünkü paketler için tahmini",
-        col_station="İstasyon", col_stop="Durak", col_risk="Risk", col_failed="Başarısız (gerçek)",
+        col_station="İstasyon", col_stop="Durak", col_risk="Risk puanı", col_failed="Sonuç", col_pkg="Paket",
+        h_risk="Modelin sıralama puanı: yüksek olan daha çok başarısız olur. Kalibre bir olasılık değildir; "
+               "işaretlenen paketlerin yalnızca yaklaşık 20'de 1'i gerçekten başarısız oluyor.",
+        o_failed="✗ Başarısız", o_ok="✓ Teslim edildi",
         ask="Veriye sor",
         ask_sub="SQL ajanı Athena SQL'i yazar (salt okunur, hatasını kendi düzeltir); analist ajanı sonucu yorumlar. "
                 "Sorular İngilizce en iyi sonucu verir.",
@@ -283,6 +295,7 @@ header [data-testid="stMainMenu"] button{{color:#FFFFFF}}
 .bars .track{{position:relative;height:.8rem}}
 .bars .b{{position:absolute;left:0;top:0;height:100%;border-radius:0 3px 3px 0;animation:grow 1s cubic-bezier(.2,.8,.2,1) both}}
 .bars .num{{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}}
+.codes{{font-size:.8rem;color:var(--muted);margin-top:.7rem;line-height:1.4}}
 .legend{{display:flex;gap:1.1rem;font-size:.82rem;color:var(--muted);margin:.1rem 0 .7rem}}
 .legend i{{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}}
 .thinking{{color:var(--muted);font-size:.92rem;animation:pulse 1.4s ease-in-out infinite}}
@@ -348,7 +361,7 @@ def bar_chart(df):
         for i, x in enumerate(df.sort_values("flagged", ascending=False).itertuples()))
     legend = (f'<div class="legend"><span><i style="background:{ACCENT}"></i>{escape(T["legend_flagged"])}</span>'
               f'<span><i style="background:{MUTED}"></i>{escape(T["legend_failed"])}</span></div>')
-    st.html(legend + f'<div class="bars">{rows}</div>')
+    st.html(legend + f'<div class="bars">{rows}</div><div class="codes">{escape(T["codes"])}</div>')
 
 
 # top bar: language switch level with the logo
@@ -433,12 +446,15 @@ with today:
     with right, st.container(key="box-table"):
         box_header(T["table"], T["table_sub"], T["h_table"])
         top = flags.sort_values("risk", ascending=False).head(15)
-        st.dataframe(
-            top[["station_code", "stop_id", "risk", "actual_failed"]].assign(actual_failed=lambda d: d.actual_failed == 1),
-            hide_index=True, height=430, width="stretch",
-            column_config={"station_code": T["col_station"], "stop_id": T["col_stop"],
-                           "risk": st.column_config.ProgressColumn(T["col_risk"], min_value=0, max_value=1, format="%.2f"),
-                           "actual_failed": st.column_config.CheckboxColumn(T["col_failed"])})
+        top = top.assign(package=top.package_id.str.replace("PackageID_", "").str[:8],
+                         outcome=top.actual_failed.map({1: T["o_failed"], 0: T["o_ok"]}))
+        view = top[["station_code", "stop_id", "package", "risk", "outcome"]].style.map(
+            lambda v: f"color:{MUTED};font-weight:700" if v == T["o_failed"] else "color:#2EA44F", subset=["outcome"])
+        st.dataframe(view, hide_index=True, height=430, width="stretch",
+                     column_config={"station_code": T["col_station"], "stop_id": T["col_stop"], "package": T["col_pkg"],
+                                    "risk": st.column_config.ProgressColumn(T["col_risk"], min_value=0, max_value=1,
+                                                                            format="%.2f", help=T["h_risk"]),
+                                    "outcome": T["col_failed"]})
 
 with ask:
     with st.container(key="box-ask"):
@@ -515,7 +531,7 @@ with dash:
 
         left, right = st.columns(2, gap="medium")
         with left, st.container(key="box-dash-map"):
-            box_header(T["c1"], T["c1_sub"], T["c1_help"])
+            box_header(T["c1"], T["c1_sub"], T["c1_help"] + " " + T["codes"])
             mx, my = st_.packages.mean(), 100 * n_failed / n_pkgs
             base = alt.Chart(st_)
             pts = base.mark_circle(color=ACCENT, opacity=.75).encode(
@@ -550,7 +566,7 @@ with dash:
                             width="stretch", theme=None)
 
         with st.container(key="box-dash-table"):
-            box_header(T["t_title"], T["t_sub"], T["t_help"])
+            box_header(T["t_title"], T["t_sub"], T["t_help"] + " " + T["codes"])
             table = st_.assign(tw=100 * st_.tw / st_.packages, service=st_.service / st_.packages,
                                load=100 * st_.load, low=100 * st_.low).sort_values("failed", ascending=False)
             st.dataframe(
