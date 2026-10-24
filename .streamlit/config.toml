@@ -1,22 +1,30 @@
+# Look and feel based on Cloudscape, AWS's open-source design system (Apache-2.0)
 [theme]
-font = "sans serif"
-baseRadius = "0.6rem"
+font = "Open Sans:https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap, sans-serif"
+headingFont = "Open Sans:https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap, sans-serif"
+baseFontSize = 15
+baseRadius = "0.5rem"
+showWidgetBorder = true
 
-# dark: AWS navy page, cards a shade lighter
-[theme.dark]
-primaryColor = "#FF9900"
-backgroundColor = "#232F3E"
-secondaryBackgroundColor = "#2C3B4F"
-textColor = "#F2F3F3"
-linkColor = "#539FE5"
-
-# light: AWS console look, white page and cards with grey borders
 [theme.light]
 primaryColor = "#FF9900"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F2F3F3"
-textColor = "#16191F"
+textColor = "#000716"
 linkColor = "#0972D3"
+borderColor = "#C6C6CD"
+dataframeBorderColor = "#E9EBED"
+dataframeHeaderBackgroundColor = "#F2F3F3"
+
+[theme.dark]
+primaryColor = "#FF9900"
+backgroundColor = "#0F1B2A"
+secondaryBackgroundColor = "#192534"
+textColor = "#FBFBFB"
+linkColor = "#539FE5"
+borderColor = "#414D5C"
+dataframeBorderColor = "#414D5C"
+dataframeHeaderBackgroundColor = "#232F3E"
 
 [client]
 toolbarMode = "viewer"  # keeps the menu with the light/dark switch, hides developer options
