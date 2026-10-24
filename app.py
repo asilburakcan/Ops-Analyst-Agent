@@ -7,6 +7,7 @@ import os
 
 from html import escape
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -33,6 +34,21 @@ def load():
 
 
 @st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_network():
+    """Station x day x route-score aggregates for the dashboard; one Athena query per hour."""
+    pk = b.query("""SELECT r.station_code, r.route_date AS day, r.route_score, count(*) AS packages,
+        sum(CASE WHEN p.scan_status <> 'DELIVERED' THEN 1 ELSE 0 END) AS failed,
+        sum(CASE WHEN p.has_time_window THEN 1 ELSE 0 END) AS tw_packages,
+        sum(p.planned_service_time_seconds) AS service_s
+        FROM lm_packages p JOIN lm_routes r ON p.route_id = r.route_id GROUP BY 1, 2, 3""")
+    rt = b.query("SELECT station_code, route_date AS day, route_score, n_stops, "
+                 "total_volume_cm3 / executor_capacity_cm3 AS load_ratio FROM lm_routes")
+    for df in (pk, rt):
+        df["day"] = pd.to_datetime(df["day"]).dt.date
+    return pk, rt
+
+
 def questions_today():
     if not b.exists("agent_questions"):
         return 0
@@ -48,7 +64,28 @@ TEXT = {
                "(AWS Open Data, CC BY-NC 4.0) · Design based on Cloudscape, AWS's open-source design system",
         sub="Last run {run} UTC · scoring held-out days from {day} · Data: [Amazon Last Mile Routing Research Challenge]"
             "(https://registry.opendata.aws/amazon-last-mile-challenges/) (AWS Open Data)",
-        tabs=["Today's scan", "Ask the data", "How it works"],
+        tabs=["Today's scan", "Ask the data", "Executive dashboard", "How it works"],
+        d_title="Network overview", d_sub="All 6,112 routes, July to August 2018. Filters apply to everything below.",
+        d_help="Built from the source tables in Athena (lm_routes, lm_packages), refreshed hourly. No model or LLM involved.",
+        f_station="Stations", f_score="Route score", f_dates="Dates", f_all="All", no_data="No routes match these filters.",
+        k_routes="Routes", k_pkgs="Packages", k_fail="Fail rate", k_tw="With a time window", k_stops="Stops per route",
+        k_load="Van load", s_days="{d} days", s_per_route="{x:.0f} per route", s_failed="{x:,} failed",
+        s_of_pkgs="of packages", s_avg="average", s_capacity="of capacity",
+        h_routes="Delivery routes in the selection.", h_pkgs="Packages on those routes.",
+        h_fail="Packages not delivered (attempted or rejected) as a share of all packages.",
+        h_tw="Packages with a customer time window; they fail about 4× as often.",
+        h_stops="Average number of stops per route.", h_load="Average share of the van's capacity used by its packages.",
+        c1="Station priority map", c1_sub="Volume vs fail rate per station. Lines are the averages; top right is the priority.",
+        c1_help="Bubble size is the number of routes. Stations above and to the right of both lines have high volume and a "
+                "high fail rate, so improving them saves the most failed deliveries.",
+        q_tr="Priority", q_tl="High fail, small", q_br="High volume, healthy", q_bl="Small, healthy",
+        x_pkgs="Packages", y_fail="Fail rate (%)", c2="Daily volume and fail rate",
+        c2_sub="Bars are packages per day, the line is the fail rate.",
+        c2_help="Shows whether failures follow volume. A rising line on a flat bar means quality, not volume, changed.",
+        t_title="Station performance", t_sub="Sorted by failed packages",
+        t_help="One row per station for the current filters.",
+        col_routes="Routes", col_pkgs="Packages", col_fail="Fail rate %", col_nfailed="Failed", col_tw="Time window %",
+        col_service="Avg service (s)", col_stops="Stops/route", col_load="Van load %", col_low="Low-score routes %",
         k_scanned="Packages scanned", d_scanned="held-out days", h_scanned="Packages on the held-out days, scored by the model before the vans leave.",
         k_flagged="Flagged for review", d_flagged="riskiest 1%",
         h_flagged="The 1% of today's packages with the highest predicted risk, saved for operators to check.",
@@ -105,7 +142,28 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
                "(AWS Open Data, CC BY-NC 4.0) · Tasarım AWS'nin açık kaynak tasarım sistemi Cloudscape'e dayanır",
         sub="Son çalıştırma {run} UTC · {day} sonrası test günleri puanlanıyor · Veri: [Amazon Last Mile Routing Research "
             "Challenge](https://registry.opendata.aws/amazon-last-mile-challenges/) (AWS Open Data)",
-        tabs=["Bugünkü tarama", "Veriye sor", "Nasıl çalışır"],
+        tabs=["Bugünkü tarama", "Veriye sor", "Yönetici paneli", "Nasıl çalışır"],
+        d_title="Ağa genel bakış", d_sub="6.112 rotanın tamamı, Temmuz–Ağustos 2018. Filtreler aşağıdaki her şeye uygulanır.",
+        d_help="Athena'daki kaynak tablolardan (lm_routes, lm_packages) üretilir, saatte bir yenilenir. Model ya da LLM kullanılmaz.",
+        f_station="İstasyonlar", f_score="Rota puanı", f_dates="Tarihler", f_all="Tümü", no_data="Bu filtrelere uyan rota yok.",
+        k_routes="Rota", k_pkgs="Paket", k_fail="Başarısızlık oranı", k_tw="Zaman pencereli", k_stops="Rota başına durak",
+        k_load="Araç doluluğu", s_days="{d} gün", s_per_route="rota başına {x:.0f}", s_failed="{x:,} başarısız",
+        s_of_pkgs="paketlerin", s_avg="ortalama", s_capacity="kapasitenin",
+        h_routes="Seçimdeki teslimat rotaları.", h_pkgs="Bu rotalardaki paketler.",
+        h_fail="Teslim edilemeyen (denendi ya da reddedildi) paketlerin tüm paketlere oranı.",
+        h_tw="Müşteri zaman penceresi olan paketler; yaklaşık 4 kat daha sık başarısız oluyor.",
+        h_stops="Rota başına ortalama durak sayısı.", h_load="Paketlerin araç kapasitesini ortalama doldurma oranı.",
+        c1="İstasyon öncelik haritası", c1_sub="İstasyon başına hacim ve başarısızlık. Çizgiler ortalamalar; sağ üst öncelikli.",
+        c1_help="Balon büyüklüğü rota sayısı. İki çizginin de sağında ve üstündeki istasyonların hem hacmi hem başarısızlığı "
+                "yüksek; iyileştirilmeleri en çok başarısız teslimatı önler.",
+        q_tr="Öncelik", q_tl="Yüksek başarısızlık, küçük", q_br="Yüksek hacim, sağlıklı", q_bl="Küçük, sağlıklı",
+        x_pkgs="Paket", y_fail="Başarısızlık (%)", c2="Günlük hacim ve başarısızlık",
+        c2_sub="Çubuklar günlük paket sayısı, çizgi başarısızlık oranı.",
+        c2_help="Başarısızlığın hacmi izleyip izlemediğini gösterir. Çubuk düzken çizgi yükseliyorsa hacim değil kalite değişmiştir.",
+        t_title="İstasyon performansı", t_sub="Başarısız paket sayısına göre sıralı",
+        t_help="Mevcut filtrelere göre her istasyon için bir satır.",
+        col_routes="Rota", col_pkgs="Paket", col_fail="Başarısızlık %", col_nfailed="Başarısız", col_tw="Zaman penceresi %",
+        col_service="Ort. servis (sn)", col_stops="Durak/rota", col_load="Doluluk %", col_low="Düşük puanlı rota %",
         k_scanned="Taranan paket", d_scanned="test günleri", h_scanned="Test günlerindeki paketler; model araçlar yola çıkmadan önce puanlar.",
         k_flagged="İşaretlenen", d_flagged="en riskli %1",
         h_flagged="Bugünkü paketlerin tahmini riski en yüksek %1'i; operatörlerin kontrolü için kaydedilir.",
@@ -346,7 +404,7 @@ st.html(f'<div class="crumb"><b>{escape(T["crumb"])}</b> &nbsp;›&nbsp; {escape
 st.title(T["title"], anchor=False)
 st.caption(T["sub"].format(run=f"{r.run_ts:%Y-%m-%d %H:%M}", day=r.today_from))
 
-today, ask, how = st.tabs(T["tabs"])
+today, ask, dash, how = st.tabs(T["tabs"])
 
 with today:
     with st.container(key="box-kpi"):
@@ -408,6 +466,107 @@ def top_dialog(question):
 
 if st.session_state.pop("run_top", False) and st.session_state.get("topq"):
     top_dialog(st.session_state.topq)
+
+def chart_style(chart):
+    return (chart.configure_view(stroke=None).configure(background="transparent")
+            .configure_axis(labelColor=V["muted"], titleColor=V["muted"], gridColor=V["divider"], domainColor=V["divider"],
+                            labelFont="Open Sans", titleFont="Open Sans")
+            .configure_legend(labelColor=V["muted"], titleColor=V["muted"]))
+
+
+with dash:
+    pk, rt = load_network()
+    with st.container(key="box-dash-filters"):
+        box_header(T["d_title"], T["d_sub"], T["d_help"])
+        c = st.columns([3, 2, 3])
+        stations = c[0].multiselect(T["f_station"], sorted(rt.station_code.unique()), placeholder=T["f_all"])
+        scores = c[1].multiselect(T["f_score"], ["High", "Medium", "Low"], placeholder=T["f_all"])
+        lo, hi = rt.day.min(), rt.day.max()
+        days = c[2].slider(T["f_dates"], min_value=lo, max_value=hi, value=(lo, hi), format="YYYY-MM-DD")
+
+    def pick(df):
+        keep = df.day.between(*days)
+        if stations:
+            keep &= df.station_code.isin(stations)
+        if scores:
+            keep &= df.route_score.isin(scores)
+        return df[keep]
+
+    p, r_ = pick(pk), pick(rt)
+    if p.empty:
+        st.info(T["no_data"])
+    else:
+        n_pkgs, n_failed = int(p.packages.sum()), int(p.failed.sum())
+        with st.container(key="box-dash-kpi"):
+            kpis([(T["k_routes"], len(r_), 0, False, T["s_days"].format(d=r_.day.nunique()), T["h_routes"]),
+                  (T["k_pkgs"], n_pkgs, 0, False, T["s_per_route"].format(x=n_pkgs / len(r_)), T["h_pkgs"]),
+                  (T["k_fail"], n_failed / n_pkgs, 2, True, T["s_failed"].format(x=n_failed), T["h_fail"]),
+                  (T["k_tw"], p.tw_packages.sum() / n_pkgs, 1, True, T["s_of_pkgs"], T["h_tw"]),
+                  (T["k_stops"], r_.n_stops.mean(), 0, False, T["s_avg"], T["h_stops"]),
+                  (T["k_load"], r_.load_ratio.mean(), 0, True, T["s_capacity"], T["h_load"])], lang)
+
+        st_ = (p.groupby("station_code").agg(packages=("packages", "sum"), failed=("failed", "sum"),
+                                            tw=("tw_packages", "sum"), service=("service_s", "sum"))
+               .join(r_.groupby("station_code").agg(routes=("n_stops", "size"), stops=("n_stops", "mean"),
+                                                    load=("load_ratio", "mean"),
+                                                    low=("route_score", lambda x: (x == "Low").mean())))
+               .reset_index())
+        st_["fail_pct"] = 100 * st_.failed / st_.packages
+
+        left, right = st.columns(2, gap="medium")
+        with left, st.container(key="box-dash-map"):
+            box_header(T["c1"], T["c1_sub"], T["c1_help"])
+            mx, my = st_.packages.mean(), 100 * n_failed / n_pkgs
+            base = alt.Chart(st_)
+            pts = base.mark_circle(color=ACCENT, opacity=.75).encode(
+                x=alt.X("packages:Q", title=T["x_pkgs"]), y=alt.Y("fail_pct:Q", title=T["y_fail"]),
+                size=alt.Size("routes:Q", legend=None, scale=alt.Scale(range=[60, 900])),
+                tooltip=[alt.Tooltip("station_code", title=T["col_station"]), alt.Tooltip("packages", format=","),
+                         alt.Tooltip("fail_pct", title=T["col_fail"], format=".2f"), "routes"])
+            labels = base.mark_text(dy=-12, fontSize=11, color=V["muted"]).encode(x="packages:Q", y="fail_pct:Q",
+                                                                                  text="station_code")
+            rules = (alt.Chart(pd.DataFrame({"x": [mx]})).mark_rule(color=MUTED, strokeDash=[4, 4]).encode(x="x:Q")
+                     + alt.Chart(pd.DataFrame({"y": [my]})).mark_rule(color=MUTED, strokeDash=[4, 4]).encode(y="y:Q"))
+            x0, x1, y0, y1 = 0, st_.packages.max() * 1.05, 0, st_.fail_pct.max() * 1.1
+            corners = pd.DataFrame({"x": [x1, x0, x1, x0], "y": [y1, y1, y0, y0],
+                                    "t": [T["q_tr"], T["q_tl"], T["q_br"], T["q_bl"]], "right": [1, 0, 1, 0]})
+            quad = alt.layer(*[alt.Chart(corners[corners.right == side]).mark_text(
+                fontSize=11, fontWeight="bold", color=MUTED, align=align, baseline="middle").encode(
+                x="x:Q", y="y:Q", text="t:N") for side, align in ((1, "right"), (0, "left"))])
+            st.altair_chart(chart_style((rules + pts + labels + quad).properties(height=340)), use_container_width=True,
+                            theme=None)
+        with right, st.container(key="box-dash-trend"):
+            box_header(T["c2"], T["c2_sub"], T["c2_help"])
+            daily = p.groupby("day").agg(packages=("packages", "sum"), failed=("failed", "sum")).reset_index()
+            daily["fail_pct"] = 100 * daily.failed / daily.packages
+            daily["day"] = pd.to_datetime(daily.day)
+            bars = alt.Chart(daily).mark_bar(color=ACCENT, opacity=.55).encode(
+                x=alt.X("day:T", title=None), y=alt.Y("packages:Q", title=T["x_pkgs"]),
+                tooltip=[alt.Tooltip("day:T", format="%Y-%m-%d"), alt.Tooltip("packages", format=",")])
+            line = alt.Chart(daily).mark_line(color=MUTED, strokeWidth=2.5, point=True).encode(
+                x="day:T", y=alt.Y("fail_pct:Q", title=T["y_fail"]),
+                tooltip=[alt.Tooltip("day:T", format="%Y-%m-%d"), alt.Tooltip("fail_pct", format=".2f")])
+            st.altair_chart(chart_style(alt.layer(bars, line).resolve_scale(y="independent").properties(height=340)),
+                            use_container_width=True, theme=None)
+
+        with st.container(key="box-dash-table"):
+            box_header(T["t_title"], T["t_sub"], T["t_help"])
+            table = st_.assign(tw=100 * st_.tw / st_.packages, service=st_.service / st_.packages,
+                               load=100 * st_.load, low=100 * st_.low).sort_values("failed", ascending=False)
+            st.dataframe(
+                table[["station_code", "routes", "packages", "failed", "fail_pct", "tw", "service", "stops", "load", "low"]],
+                hide_index=True, use_container_width=True,
+                column_config={"station_code": T["col_station"], "routes": T["col_routes"],
+                               "packages": st.column_config.NumberColumn(T["col_pkgs"], format="localized"),
+                               "failed": st.column_config.NumberColumn(T["col_nfailed"], format="localized"),
+                               "fail_pct": st.column_config.ProgressColumn(T["col_fail"], format="%.2f", min_value=0,
+                                                                           max_value=float(table.fail_pct.max())),
+                               "tw": st.column_config.NumberColumn(T["col_tw"], format="%.1f"),
+                               "service": st.column_config.NumberColumn(T["col_service"], format="%.0f"),
+                               "stops": st.column_config.NumberColumn(T["col_stops"], format="%.0f"),
+                               "load": st.column_config.NumberColumn(T["col_load"], format="%.0f"),
+                               "low": st.column_config.NumberColumn(T["col_low"], format="%.1f")})
+
 
 with how, st.container(key="box-how"):
     st.markdown(T["how"])
