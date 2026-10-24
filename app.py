@@ -241,14 +241,17 @@ V = dict(box="#FFFFFF", border="#C6C6CD", divider="#E9EBED", text="#000716", mut
          shadow="0 1px 1px 1px rgba(0,7,22,.06), 0 1px 4px 1px rgba(0,7,22,.08)")
 
 st.html(f"""<style>
+html{{font-size:clamp(12px, calc(2.6vh - 6px), 15.5px) !important}}
 :root{{--box:{V["box"]};--border:{V["border"]};--divider:{V["divider"]};--text:{V["text"]};--muted:{V["muted"]};
   --link:{V["link"]};--shadow:{V["shadow"]}}}
 header[data-testid="stHeader"]{{background:#232F3E;border-bottom:1px solid #414D5C;height:3.1rem;min-height:3.1rem}}
 header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F6B7A}}
-[data-testid="stMainBlockContainer"]{{padding:3.6rem 2rem 1.2rem}}
+[data-testid="stMainBlockContainer"]{{padding:3.45rem 2rem 1.2rem}}
 [data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"]{{gap:.55rem}}
-[data-testid="stHeading"] h1{{font-size:1.45rem;font-weight:700;padding:0}}
-[data-testid="stHeading"] h3{{font-size:1.02rem;font-weight:700;padding:0 0 .3rem}}
+[data-testid="stHeading"] [data-testid="stMarkdownContainer"]{{margin-bottom:0 !important}}
+[data-testid="stHeading"] h1{{font-size:1.45rem;line-height:1.3;font-weight:700;padding:.1rem 0 .15rem}}
+[data-testid="stHeading"] h3{{font-size:1.02rem;line-height:1.3;font-weight:700;padding:0}}
+[class*="st-key-box"] [data-testid="stHeading"]{{margin-bottom:.15rem}}
 [data-testid="stHeading"] [data-testid="stTooltipIcon"] svg{{color:var(--link) !important;stroke:var(--link) !important}}
 [data-testid="stTab"]{{font-weight:700;color:var(--muted)}}
 [data-testid="stTab"][aria-selected="true"]{{color:var(--link)}}
@@ -272,7 +275,7 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
 .topright a{{display:flex;color:#FFFFFF}} .topright .sep{{width:1px;height:1.3rem;background:#5F6B7A}}
 @media (max-width:1000px){{.st-key-topsearch,.topright .region,.topright .sep{{display:none}}}}
 .crumb{{font-size:.8rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
-.boxdesc{{color:var(--muted);font-size:.84rem;line-height:1.4;margin:.1rem 0 .45rem}}
+.boxdesc{{color:var(--muted);font-size:.8rem;line-height:1.35;margin:-.45rem 0 .35rem}}
 .kv{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));row-gap:1rem}}
 .kv>div{{padding:0 1.25rem;border-left:1px solid var(--divider);min-width:0}}
 .kv>div:first-child{{border-left:none;padding-left:0}}
@@ -284,13 +287,13 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
 .tip:hover::after{{content:attr(data-tip);position:absolute;top:1.3rem;left:-.6rem;width:16rem;white-space:normal;font-weight:400;
   background:var(--box);color:var(--text);border:1px solid var(--border);padding:.6rem .75rem;border-radius:.6rem;
   font-size:.82rem;line-height:1.45;z-index:1000;box-shadow:var(--shadow)}}
-.cols{{display:flex;align-items:flex-end;gap:.3rem;height:190px}}
+.cols{{display:flex;align-items:flex-end;gap:.3rem;height:clamp(140px, 21vh, 300px)}}
 .cols .c{{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}}
-.cols .t{{position:relative;width:70%;min-height:2px}}
+.cols .t{{position:relative;width:70%;min-height:2px;flex:none}}
 .cols .b{{position:absolute;left:0;bottom:0;width:100%;border-radius:3px 3px 0 0;animation:rise 1s cubic-bezier(.2,.8,.2,1) both}}
 .cols .n{{font-size:.72rem;color:var(--muted);margin-bottom:.2rem;font-variant-numeric:tabular-nums}}
 .cols .l{{font-size:.7rem;margin-top:.35rem;color:var(--text);white-space:nowrap}}
-@media (max-width:1300px){{.cols{{height:210px}} .cols .l{{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.68rem}}}}
+@media (max-width:1300px){{.cols{{height:clamp(170px, 27vh, 320px)}} .cols .l{{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.68rem}}}}
 .codes{{font-size:.74rem;color:var(--muted);margin-top:.45rem;line-height:1.35}}
 .legend{{display:flex;gap:1.1rem;font-size:.8rem;color:var(--muted);margin:0 0 .35rem}}
 .legend i{{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}}
@@ -346,10 +349,10 @@ def notes(items):
 
 def bar_chart(df):
     """Animated column chart: flagged packages per station side by side, actually failed inside each column."""
-    top, h = df.flagged.max(), 150  # px of the tallest column
+    top = df.flagged.max()
     cols = "".join(
         f'<div class="c" title="{escape(x.station_code)}: {x.flagged} flagged, {x.actually_failed} failed">'
-        f'<span class="n">{x.flagged}</span><div class="t" style="height:{h * x.flagged / top:.0f}px">'
+        f'<span class="n">{x.flagged}</span><div class="t" style="height:{72 * x.flagged / top:.1f}%">'
         f'<div class="b" style="height:100%;background:{ACCENT};animation-delay:{i * 40}ms"></div>'
         f'<div class="b" style="height:{100 * x.actually_failed / x.flagged:.1f}%;background:{MUTED};'
         f'animation-delay:{i * 40 + 300}ms"></div></div><span class="l">{escape(x.station_code)}</span></div>'
@@ -445,7 +448,7 @@ with today:
                          outcome=top.actual_failed.map({1: T["o_failed"], 0: T["o_ok"]}))
         view = top[["station_code", "stop_id", "package", "risk", "outcome"]].style.map(
             lambda v: f"color:{MUTED};font-weight:700" if v == T["o_failed"] else "color:#2EA44F", subset=["outcome"])
-        st.dataframe(view, hide_index=True, height=236, width="stretch",
+        st.dataframe(view, hide_index=True, height=212, width="stretch",
                      column_config={"station_code": T["col_station"], "stop_id": T["col_stop"], "package": T["col_pkg"],
                                     "risk": st.column_config.ProgressColumn(T["col_risk"], min_value=0, max_value=1,
                                                                             format="%.2f", help=T["h_risk"]),
