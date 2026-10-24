@@ -38,6 +38,28 @@ def features(df):
     return df
 
 
+def comparisons(te, flagged):
+    """Fixed, tested comparisons on today's packages, so the analyst's root cause rests on data, not guesses."""
+    te = te.assign(group=flagged.map({True: "flagged", False: "not flagged"}))
+    pct = lambda s: round(100 * s.mean(), 2)  # noqa: E731
+    by_flag = te.groupby("group").agg(
+        packages=("failed", "size"), fail_rate_pct=("failed", pct), time_window_share_pct=("has_time_window", pct),
+        avg_service_time_s=("planned_service_time_seconds", "mean"), avg_packages_at_stop=("stop_packages", "mean"),
+        avg_load_ratio=("load_ratio", "mean")).round(2)
+    by_window = te.groupby("has_time_window").agg(packages=("failed", "size"), fail_rate_pct=("failed", pct))
+    service_band = pd.qcut(te.planned_service_time_seconds, 4, labels=["shortest 25%", "short", "long", "longest 25%"],
+                           duplicates="drop")
+    by_service = te.groupby(service_band, observed=True).agg(packages=("failed", "size"), fail_rate_pct=("failed", pct))
+    by_station = (te.groupby("station_code", observed=True)
+                  .agg(flagged=("group", lambda g: int((g == "flagged").sum())), fail_rate_pct=("failed", pct))
+                  .sort_values("flagged", ascending=False).head(5))
+    return {"flagged_vs_not_flagged": by_flag.to_dict("index"),
+            "fail_rate_by_time_window": {("with window" if k else "no window"): v
+                                         for k, v in by_window.to_dict("index").items()},
+            "fail_rate_by_planned_service_time": by_service.to_dict("index"),
+            "top_flagged_stations_today": by_station.to_dict("index")}
+
+
 def run(df=None, save=True):
     df = features(b.query(SQL, big=True) if df is None else df)
     cut = df.route_date.quantile(0.8)
@@ -74,8 +96,7 @@ def run(df=None, save=True):
 
     summary = {"metrics": metrics,
                "top_features": (importance / importance.sum()).round(3).head(5).to_dict(),
-               "flagged_by_station": flags.station_code.value_counts().head(5).to_dict(),
-               "flagged_with_time_window_share": round(te[flagged].has_time_window.mean(), 3)}
+               "comparisons": comparisons(te, flagged)}
     return {"metrics": metrics, "summary": summary, "flags": flags}
 
 
