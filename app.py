@@ -5,7 +5,8 @@ Reads only the small result tables (daily_reports, risk_flags, agent_metrics), s
 """
 import os
 
-import altair as alt
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
@@ -43,7 +44,7 @@ TEXT = {
         sub="Last run {run} UTC · scoring held-out days from {day} · Data: [Amazon Last Mile Routing Research Challenge]"
             "(https://registry.opendata.aws/amazon-last-mile-challenges/) (AWS Open Data)",
         tabs=["Today's scan", "Ask the data", "How it works"],
-        k_scanned="Packages scanned", h_scanned="Packages on the held-out days, scored by the model before the vans leave.",
+        k_scanned="Packages scanned", d_scanned="held-out days", h_scanned="Packages on the held-out days, scored by the model before the vans leave.",
         k_flagged="Flagged for review", d_flagged="riskiest 1%",
         h_flagged="The 1% of today's packages with the highest predicted risk, saved for operators to check.",
         k_hit="Fail rate in flagged", d_hit="{lift:.1f}× avg",
@@ -56,6 +57,15 @@ TEXT = {
         h_gold="Share of golden-set questions where the agent's SQL returned the same result as the reference SQL.",
         report="Today's report", report_sub="Written by the analyst agent from the model's scan",
         finding="Finding", cause="Root cause", idea="Automation idea",
+        h_report="The analyst agent reads the model's scan and writes three short notes every morning.",
+        h_finding="What the scan shows, with the key numbers.",
+        h_cause="A hypothesis, given only when the data compares groups; otherwise the check that would test it.",
+        h_idea="A manual step this finding suggests automating.",
+        h_chart="Per station: packages the model flagged (blue) and how many of them really failed (orange).",
+        h_table="Packages with the highest predicted risk. 'Failed (real)' is the true outcome in the data.",
+        h_ask="Ask in plain language. The SQL agent writes and runs read-only Athena SQL and repairs its own errors; "
+              "the analyst agent explains the result. Every question is saved to agent_questions.",
+        legend_flagged="flagged", legend_failed="actually failed",
         chart="Flagged packages by station", axis="flagged packages (orange: actually failed)",
         chart_sub="Orange is the real outcome in the data: the check that the flags are right.",
         table="Riskiest packages", table_sub="Model prediction for today's packages",
@@ -80,7 +90,7 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         sub="Son çalıştırma {run} UTC · {day} sonrası test günleri puanlanıyor · Veri: [Amazon Last Mile Routing Research "
             "Challenge](https://registry.opendata.aws/amazon-last-mile-challenges/) (AWS Open Data)",
         tabs=["Bugünkü tarama", "Veriye sor", "Nasıl çalışır"],
-        k_scanned="Taranan paket", h_scanned="Test günlerindeki paketler; model araçlar yola çıkmadan önce puanlar.",
+        k_scanned="Taranan paket", d_scanned="test günleri", h_scanned="Test günlerindeki paketler; model araçlar yola çıkmadan önce puanlar.",
         k_flagged="İşaretlenen", d_flagged="en riskli %1",
         h_flagged="Bugünkü paketlerin tahmini riski en yüksek %1'i; operatörlerin kontrolü için kaydedilir.",
         k_hit="İşaretlide başarısız", d_hit="{lift:.1f}× ort.",
@@ -93,6 +103,15 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         h_gold="Ajanın SQL'inin referans SQL ile aynı sonucu verdiği altın set sorularının oranı.",
         report="Bugünkü rapor", report_sub="Analist ajanı tarafından modelin taramasından yazıldı",
         finding="Bulgu", cause="Kök neden", idea="Otomasyon önerisi",
+        h_report="Analist ajanı her sabah modelin taramasını okur ve üç kısa not yazar.",
+        h_finding="Taramanın gösterdiği sonuç ve önemli sayılar.",
+        h_cause="Bir hipotez; sadece veri grupları karşılaştırıyorsa verilir, yoksa bunu test edecek kontrol yazılır.",
+        h_idea="Bu bulgunun otomatikleştirmeyi önerdiği elle yapılan adım.",
+        h_chart="İstasyon başına: modelin işaretlediği paketler (mavi) ve bunlardan gerçekte başarısız olanlar (turuncu).",
+        h_table="Tahmini riski en yüksek paketler. 'Başarısız (gerçek)', verideki gerçek sonuç.",
+        h_ask="Soruyu doğal dille yaz. SQL ajanı salt okunur Athena SQL'ini yazıp çalıştırır ve hatasını kendi düzeltir; "
+              "analist ajanı sonucu yorumlar. Her soru agent_questions tablosuna kaydedilir.",
+        legend_flagged="işaretlenen", legend_failed="gerçekte başarısız",
         chart="İstasyona göre işaretlenen paketler", axis="işaretlenen paketler (turuncu: gerçekte başarısız)",
         chart_sub="Turuncu, verideki gerçek sonuç: işaretlerin doğruluğunun kontrolü.",
         table="En riskli paketler", table_sub="Modelin bugünkü paketler için tahmini",
@@ -127,10 +146,74 @@ report, flags, golden = load()
 r = report.iloc[0]
 
 
-def card(title, text):
+def card(title, text, tip):
     with st.container(border=True):
-        st.caption(title.upper())
+        st.caption(title.upper(), help=tip)
         st.write(text)
+
+
+CSS = """<style>
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:.5rem}
+.kpi{border:1px solid rgba(250,250,250,.18);border-radius:.6rem;padding:.9rem 1rem}
+.kpi .lab{display:flex;justify-content:space-between;gap:.4rem;font-size:.9rem;white-space:nowrap}
+.kpi .lab span:first-child{overflow:hidden;text-overflow:ellipsis}
+.kpi .val{font-size:2.2rem;line-height:1.2;margin:.35rem 0 .45rem;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:.8rem;padding:.1rem .55rem;border-radius:99px}
+.good{background:rgba(33,195,84,.15);color:#7EE2A0}.muted{background:rgba(250,250,250,.08);color:#B8BFCC}
+.tip{position:relative;flex:none;width:1rem;height:1rem;border:1px solid #8A93A3;border-radius:50%;color:#8A93A3;
+  font-size:.68rem;display:inline-flex;align-items:center;justify-content:center;cursor:help}
+.tip:hover::after{content:attr(data-tip);position:absolute;top:1.4rem;right:-.5rem;width:16rem;white-space:normal;
+  background:#1F2633;color:#E6E9F0;padding:.55rem .7rem;border-radius:.5rem;font-size:.8rem;line-height:1.4;
+  z-index:1000;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.kpi:first-child .tip:hover::after{right:auto;left:-.5rem}
+.bars .row{display:grid;grid-template-columns:3.2rem 1fr 3rem;align-items:center;gap:.6rem;height:1.55rem;font-size:.85rem}
+.bars .track{position:relative;height:.85rem}
+.bars .b{position:absolute;left:0;top:0;height:100%;border-radius:0 3px 3px 0;animation:grow 1s cubic-bezier(.2,.8,.2,1) both}
+.bars .num{text-align:right;color:#B8BFCC;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:1rem;font-size:.8rem;color:#B8BFCC;margin:.2rem 0 .6rem}
+.legend i{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}
+@keyframes grow{from{width:0}}
+</style>"""
+
+COUNT_UP = """<script>
+document.querySelectorAll('.val[data-to]:not([data-done])').forEach(el => {
+  el.dataset.done = 1;
+  const to = +el.dataset.to, d = +el.dataset.dec, pct = el.dataset.pct === '1', t0 = performance.now();
+  const f = new Intl.NumberFormat(el.dataset.loc, {style: pct ? 'percent' : 'decimal',
+                                                  minimumFractionDigits: d, maximumFractionDigits: d});
+  const step = t => { const k = Math.min(1, (t - t0) / 1000), e = 1 - Math.pow(1 - k, 3);
+                      el.textContent = f.format(to * e); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+});
+</script>"""
+
+
+def kpi_row(items, lang):
+    """Animated KPI cards: numbers count up on load, each card has a hover tooltip."""
+    loc = "tr-TR" if lang == "tr" else "en-US"
+    cards = "".join(
+        f'<div class="kpi"><div class="lab"><span>{escape(label)}</span>'
+        f'<span class="tip" data-tip="{escape(tip)}">?</span></div>'
+        f'<div class="val" data-to="{value}" data-dec="{dec}" data-pct="{int(pct)}" data-loc="{loc}">0</div>'
+        f'<span class="pill {style}">{escape(delta)}</span></div>'
+        for label, value, dec, pct, delta, style, tip in items)
+    st.html(CSS + f'<div class="kpis">{cards}</div>' + COUNT_UP, unsafe_allow_javascript=True)
+
+
+def bar_chart(df):
+    """Animated horizontal bars: flagged packages per station, actually failed on top."""
+    top = df.flagged.max()
+    rows = "".join(
+        f'<div class="row"><span>{escape(x.station_code)}</span><div class="track">'
+        f'<div class="b" style="width:{100 * x.flagged / top:.1f}%;background:{ACCENT};animation-delay:{i * 40}ms" '
+        f'title="{x.flagged} flagged"></div>'
+        f'<div class="b" style="width:{100 * x.actually_failed / top:.1f}%;background:{MUTED};'
+        f'animation-delay:{i * 40 + 300}ms" title="{x.actually_failed} failed"></div></div>'
+        f'<span class="num">{x.flagged}</span></div>'
+        for i, x in enumerate(df.sort_values("flagged", ascending=False).itertuples()))
+    legend = (f'<div class="legend"><span><i style="background:{ACCENT}"></i>{escape(T["legend_flagged"])}</span>'
+              f'<span><i style="background:{MUTED}"></i>{escape(T["legend_failed"])}</span></div>')
+    st.html(CSS + legend + f'<div class="bars">{rows}</div>')
 
 
 # language switch pinned to the top bar, level with the logo
@@ -145,47 +228,38 @@ st.caption(T["sub"].format(run=f"{r.run_ts:%Y-%m-%d %H:%M}", day=r.today_from))
 today, ask, how = st.tabs(T["tabs"])
 
 with today:
-    c = st.columns(5)
-    c[0].metric(T["k_scanned"], f"{r.today_packages:,.0f}", border=True, help=T["h_scanned"])
-    c[1].metric(T["k_flagged"], f"{r.flagged:,.0f}", T["d_flagged"], delta_color="off", delta_arrow="off",
-                border=True, help=T["h_flagged"])
-    c[2].metric(T["k_hit"], f"{r.fail_rate_flagged:.1%}", T["d_hit"].format(lift=r.lift), border=True,
-                help=T["h_hit"].format(avg=r.fail_rate, lift=r.lift))
-    c[3].metric(T["k_auc"], f"{r.auc:.2f}", T["d_auc"].format(gain=r.auc - r.auc_station_baseline), border=True,
-                help=T["h_auc"].format(base=r.auc_station_baseline))
+    items = [(T["k_scanned"], r.today_packages, 0, False, T["d_scanned"], "muted", T["h_scanned"]),
+             (T["k_flagged"], r.flagged, 0, False, T["d_flagged"], "muted", T["h_flagged"]),
+             (T["k_hit"], r.fail_rate_flagged, 1, True, T["d_hit"].format(lift=r.lift), "good",
+              T["h_hit"].format(avg=r.fail_rate, lift=r.lift)),
+             (T["k_auc"], r.auc, 2, False, T["d_auc"].format(gain=r.auc - r.auc_station_baseline), "good",
+              T["h_auc"].format(base=r.auc_station_baseline))]
     if len(golden):
-        c[4].metric(T["k_gold"], f"{golden.accuracy[0]:.0%}", T["d_gold"].format(n=golden.questions[0]),
-                    delta_color="off", delta_arrow="off", border=True, help=T["h_gold"])
+        items.append((T["k_gold"], golden.accuracy[0], 0, True, T["d_gold"].format(n=golden.questions[0]), "muted",
+                      T["h_gold"]))
+    kpi_row(items, lang)
 
-    st.subheader(T["report"], anchor=False)
+    st.subheader(T["report"], anchor=False, help=T["h_report"])
     st.caption(T["report_sub"])
     rep = report_text(r.finding, r.root_cause_hypothesis, r.automation_idea, lang)
     c = st.columns(3)
     with c[0]:
-        card(T["finding"], rep["finding"])
+        card(T["finding"], rep["finding"], T["h_finding"])
     with c[1]:
-        card(T["cause"], rep["cause"])
+        card(T["cause"], rep["cause"], T["h_cause"])
     with c[2]:
-        card(T["idea"], rep["idea"])
+        card(T["idea"], rep["idea"], T["h_idea"])
 
     left, right = st.columns([3, 2], gap="large")
     with left:
-        st.subheader(T["chart"], anchor=False)
+        st.subheader(T["chart"], anchor=False, help=T["h_chart"])
         by_station = (flags.groupby("station_code")
                       .agg(flagged=("package_id", "size"), actually_failed=("actual_failed", "sum"))
                       .reset_index())
-        order = by_station.sort_values("flagged", ascending=False).station_code.tolist()
-        base = alt.Chart(by_station).encode(y=alt.Y("station_code:N", sort=order, title=None,
-                                                    axis=alt.Axis(labelOverlap=False)))
-        chart = (base.mark_bar(color=ACCENT, cornerRadiusEnd=3, size=14)
-                 .encode(x=alt.X("flagged:Q", title=T["axis"]),
-                         tooltip=["station_code", "flagged", "actually_failed"])
-                 + base.mark_bar(color=MUTED, cornerRadiusEnd=3, size=14).encode(x="actually_failed:Q")
-                 ).properties(height=440)
-        st.altair_chart(chart, use_container_width=True)
+        bar_chart(by_station)
         st.caption(T["chart_sub"])
     with right:
-        st.subheader(T["table"], anchor=False)
+        st.subheader(T["table"], anchor=False, help=T["h_table"])
         st.caption(T["table_sub"])
         top = flags.sort_values("risk", ascending=False).head(15)
         st.dataframe(
@@ -196,7 +270,7 @@ with today:
                            "actual_failed": st.column_config.CheckboxColumn(T["col_failed"])})
 
 with ask:
-    st.subheader(T["ask"], anchor=False)
+    st.subheader(T["ask"], anchor=False, help=T["h_ask"])
     st.caption(T["ask_sub"])
     pick = st.pills("Examples", EXAMPLES, label_visibility="collapsed")
     with st.form("ask", border=False):
@@ -221,11 +295,11 @@ with ask:
                 if a:
                     c = st.columns(3)
                     with c[0]:
-                        card(T["finding"], a.get("finding", ""))
+                        card(T["finding"], a.get("finding", ""), T["h_finding"])
                     with c[1]:
-                        card(T["cause"], a.get("root_cause_hypothesis", ""))
+                        card(T["cause"], a.get("root_cause_hypothesis", ""), T["h_cause"])
                     with c[2]:
-                        card(T["idea"], a.get("automation_idea", ""))
+                        card(T["idea"], a.get("automation_idea", ""), T["h_idea"])
             b.save(pd.DataFrame([{"asked_ts": pd.Timestamp.now(tz="UTC").tz_localize(None).floor("s"),
                                   "question": question, "generated_sql": out["sql"],
                                   "executed": int(out["df"] is not None), "repairs": out["repairs"],
