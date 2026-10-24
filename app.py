@@ -37,7 +37,7 @@ def questions_today():
 report, flags, golden = load()
 r = report.iloc[0]
 
-st.title("📦 Ops Analyst Agent: last-mile delivery risk")
+st.title("Ops Analyst Agent: last-mile delivery risk")
 st.caption(f"Daily AWS pipeline · last run {r.run_ts} UTC · Amazon Last Mile data, held-out days from {r.today_from} "
            "· S3 + Glue + Athena, LightGBM, LLM agents")
 
