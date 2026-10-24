@@ -15,6 +15,7 @@ from pathlib import Path
 import backend as b
 
 MAX_REPAIRS = 2
+WRITE_REQUEST = re.compile(r"\b(delete|drop|truncate|insert|update|alter|remove|wipe|sil|silin|kaldır|güncelle)\b", re.I)
 FORBIDDEN = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|merge|unload|msck|call)\b", re.I)
 
 # DATA_DICTIONARY.md is the shared vocabulary of the agents and the docs. The SQL agent sees only the
@@ -33,6 +34,8 @@ Rules for root_cause_hypothesis:
   clause, then name one concrete comparison that would test a cause (for example fail rate with vs without
   time windows at that station). Write it in the answer language, with no placeholders.
 - A result can combine separate answers (e.g. a station and a package size); never link them as cause and effect.
+- The hypothesis must agree with the numbers in the result. If the groups do not differ in the direction a cause
+  would predict, say the result does not support it.
 Return JSON only: {{"finding": "max 30 words, with key numbers and correct units",
 "root_cause_hypothesis": "max 25 words, only from fields in the data; if the data cannot explain it, name the check that would",
 "automation_idea": "max 25 words: a manual process this finding suggests automating"}}"""
@@ -68,6 +71,11 @@ def run_sql(sql):
     if not re.match(r"^\s*(select|with)\b", sql, re.I) or FORBIDDEN.search(sql):
         raise ValueError("only read-only SELECT queries are allowed")
     return b.query(sql)
+
+
+def is_write_request(question):
+    """Requests to change data are refused before any LLM call; the agent only reads."""
+    return bool(WRITE_REQUEST.search(question))
 
 
 def write_sql(question):
@@ -117,6 +125,8 @@ def translate(texts, lang="tr"):
 
 
 def ask(question, lang="en"):
+    if is_write_request(question):
+        return {"sql": "", "df": None, "repairs": 0, "analysis": {}, "blocked": True}
     sql, df, repairs = write_sql(question)
     analysis = analyze(question, df.head(20).to_dict("records"), lang) if df is not None else {}
     return {"sql": sql, "df": df, "repairs": repairs, "analysis": analysis}

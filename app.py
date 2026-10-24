@@ -77,7 +77,8 @@ TEXT = {
         ask="Ask the data",
         ask_sub="The SQL agent writes Athena SQL (read-only, self-repairing); the analyst agent explains the result.",
         placeholder="e.g. Top 5 stations by average packages per route", button="Ask",
-        limit="Daily question limit ({n}) reached. Try again tomorrow.", step_sql="Thinking… writing SQL and running it on Athena", step_analyst="Thinking… the analyst is reading the result",
+        limit="Daily question limit ({n}) reached. Try again tomorrow.",
+        blocked="Only read-only questions are allowed. The agent can query the data but never change or delete it.", step_sql="Thinking… writing SQL and running it on Athena", step_analyst="Thinking… the analyst is reading the result",
         sql="SQL written by the agent", repaired="Self-repaired {n} time(s).", failed="The query failed after {n} repairs.",
         how="""**Every day (cron on EC2, 05:00 UTC):** `pipeline.py` reads the packages from Athena, the LightGBM model scores
 them, the riskiest 1% are saved to `risk_flags`, and the analyst agent writes the report to `daily_reports`.
@@ -128,7 +129,8 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         ask_sub="SQL ajanı Athena SQL'i yazar (salt okunur, hatasını kendi düzeltir); analist ajanı sonucu yorumlar. "
                 "Sorular İngilizce en iyi sonucu verir.",
         placeholder="örn. Top 5 stations by average packages per route", button="Sor",
-        limit="Günlük soru limitine ({n}) ulaşıldı. Yarın tekrar deneyin.", step_sql="Düşünüyor… SQL yazılıyor ve Athena'da çalıştırılıyor", step_analyst="Düşünüyor… analist sonucu yorumluyor",
+        limit="Günlük soru limitine ({n}) ulaşıldı. Yarın tekrar deneyin.",
+        blocked="Sadece okuma soruları yapılabilir. Ajan veriyi sorgulayabilir ama asla değiştiremez ya da silemez.", step_sql="Düşünüyor… SQL yazılıyor ve Athena'da çalıştırılıyor", step_analyst="Düşünüyor… analist sonucu yorumluyor",
         sql="Ajanın yazdığı SQL", repaired="{n} kez kendini düzeltti.", failed="Sorgu {n} düzeltmeden sonra başarısız oldu.",
         how="""**Her gün (EC2'de cron, 05:00 UTC):** `pipeline.py` paketleri Athena'dan okur, LightGBM modeli puanlar,
 en riskli %1 `risk_flags` tablosuna kaydedilir ve analist ajanı raporu `daily_reports` tablosuna yazar.
@@ -327,7 +329,9 @@ with ask:
             submitted = st.form_submit_button(T["button"], type="primary")
         status = st.empty()  # pulsing grey line under the button while the agents work
 
-    if submitted and question:
+    if submitted and question and agents.is_write_request(question):
+        st.warning(T["blocked"])  # refused before any LLM call or query
+    elif submitted and question:
         status.html(THINKING.format(T["step_sql"]))
         if questions_today() >= DAILY_LIMIT:
             status.empty()
