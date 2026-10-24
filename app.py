@@ -33,7 +33,6 @@ def load():
     return report, flags, golden
 
 
-@st.cache_data(ttl=60, show_spinner=False)
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_network():
     """Station x day x route-score aggregates for the dashboard; one Athena query per hour."""
@@ -49,6 +48,7 @@ def load_network():
     return pk, rt
 
 
+@st.cache_data(ttl=60, show_spinner=False)
 def questions_today():
     if not b.exists("agent_questions"):
         return 0
