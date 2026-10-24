@@ -5,9 +5,9 @@ cd /home/ec2-user/Ops-Analyst-Agent
 [ -d venv ] || python3.11 -m venv venv
 venv/bin/pip install -q -r requirements.txt
 mkdir -p logs
-# daily run at 05:00 UTC (08:00 Turkey); replace any old line so deploys never duplicate it
-JOB="0 5 * * * cd $PWD && venv/bin/python pipeline.py >> logs/pipeline.log 2>&1"
-(crontab -l 2>/dev/null | grep -v 'pipeline.py'; echo "$JOB") | crontab -
+# daily run at 05:00 UTC (08:00 Turkey) as ec2-user; a system cron file is replaced on every deploy, never duplicated
+echo "0 5 * * * ec2-user cd $PWD && venv/bin/python pipeline.py >> logs/pipeline.log 2>&1" | sudo tee /etc/cron.d/ops-analyst-agent >/dev/null
+sudo chmod 644 /etc/cron.d/ops-analyst-agent
 echo "deployed $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> logs/deploys.log
 
 # Streamlit operator view as a service, bound to localhost only (reach it with SSM port forwarding; no open port)
