@@ -288,7 +288,8 @@ with ask:
     st.caption(T["ask_sub"])
     pick = st.pills("Examples", EXAMPLES, label_visibility="collapsed")
     with st.form("ask", border=False):
-        question = st.text_input("Question", value=pick or "", label_visibility="collapsed", placeholder=T["placeholder"])
+        question = st.text_input("Question", value=pick or "", label_visibility="collapsed", placeholder=T["placeholder"],
+                                 autocomplete="off")
         submitted = st.form_submit_button(T["button"], type="primary")
 
     if submitted and question:
