@@ -377,7 +377,7 @@ def answer(question, status):
         if df is None:
             st.error(T["failed"].format(n=repairs))
         else:
-            st.dataframe(df.head(50), hide_index=True, use_container_width=True)
+            st.dataframe(df.head(50), hide_index=True, width="stretch")
             if analysis:
                 notes([(T["finding"], analysis.get("finding", ""), T["h_finding"]),
                        (T["cause"], analysis.get("root_cause_hypothesis", ""), T["h_cause"]),
@@ -435,7 +435,7 @@ with today:
         top = flags.sort_values("risk", ascending=False).head(15)
         st.dataframe(
             top[["station_code", "stop_id", "risk", "actual_failed"]].assign(actual_failed=lambda d: d.actual_failed == 1),
-            hide_index=True, height=430, use_container_width=True,
+            hide_index=True, height=430, width="stretch",
             column_config={"station_code": T["col_station"], "stop_id": T["col_stop"],
                            "risk": st.column_config.ProgressColumn(T["col_risk"], min_value=0, max_value=1, format="%.2f"),
                            "actual_failed": st.column_config.CheckboxColumn(T["col_failed"])})
@@ -533,7 +533,7 @@ with dash:
             quad = alt.layer(*[alt.Chart(corners[corners.right == side]).mark_text(
                 fontSize=11, fontWeight="bold", color=MUTED, align=align, baseline="middle").encode(
                 x="x:Q", y="y:Q", text="t:N") for side, align in ((1, "right"), (0, "left"))])
-            st.altair_chart(chart_style((rules + pts + labels + quad).properties(height=340)), use_container_width=True,
+            st.altair_chart(chart_style((rules + pts + labels + quad).properties(height=340)), width="stretch",
                             theme=None)
         with right, st.container(key="box-dash-trend"):
             box_header(T["c2"], T["c2_sub"], T["c2_help"])
@@ -547,7 +547,7 @@ with dash:
                 x="day:T", y=alt.Y("fail_pct:Q", title=T["y_fail"]),
                 tooltip=[alt.Tooltip("day:T", format="%Y-%m-%d"), alt.Tooltip("fail_pct", format=".2f")])
             st.altair_chart(chart_style(alt.layer(bars, line).resolve_scale(y="independent").properties(height=340)),
-                            use_container_width=True, theme=None)
+                            width="stretch", theme=None)
 
         with st.container(key="box-dash-table"):
             box_header(T["t_title"], T["t_sub"], T["t_help"])
@@ -555,7 +555,7 @@ with dash:
                                load=100 * st_.load, low=100 * st_.low).sort_values("failed", ascending=False)
             st.dataframe(
                 table[["station_code", "routes", "packages", "failed", "fail_pct", "tw", "service", "stops", "load", "low"]],
-                hide_index=True, use_container_width=True,
+                hide_index=True, width="stretch",
                 column_config={"station_code": T["col_station"], "routes": T["col_routes"],
                                "packages": st.column_config.NumberColumn(T["col_pkgs"], format="localized"),
                                "failed": st.column_config.NumberColumn(T["col_nfailed"], format="localized"),
