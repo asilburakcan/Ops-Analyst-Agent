@@ -3,6 +3,7 @@
 streamlit run app.py
 Reads only the small result tables (daily_reports, risk_flags, agent_metrics), so a page view costs almost nothing.
 """
+import base64
 import os
 
 from html import escape
@@ -40,7 +41,8 @@ def questions_today():
 
 TEXT = {
     "en": dict(
-        title="Last-mile delivery risk", crumb="Ops Analyst Agent",
+        title="Last-mile delivery risk", crumb="Ops Analyst Agent", region="US East (Ohio)",
+        top_placeholder="Ask the data, e.g. Which station has the highest failed delivery rate?",
         kpi_title="Scan summary", kpi_sub="Held-out packages scored before dispatch, checked against their real outcome",
         footer="Personal portfolio project, not affiliated with Amazon · Data: Amazon Last Mile Routing Research Challenge "
                "(AWS Open Data, CC BY-NC 4.0) · Design based on Cloudscape, AWS's open-source design system",
@@ -91,7 +93,8 @@ them, the riskiest 1% are saved to `risk_flags`, and the analyst agent writes th
 
 Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-Analyst-Agent)"""),
     "tr": dict(
-        title="Son mil teslimat riski", crumb="Ops Analyst Agent",
+        title="Son mil teslimat riski", crumb="Ops Analyst Agent", region="ABD Doğu (Ohio)",
+        top_placeholder="Veriye sor, örn. Which station has the highest failed delivery rate?",
         kpi_title="Tarama özeti", kpi_sub="Araçlar çıkmadan önce puanlanan test paketleri, gerçek sonuçla kontrol edildi",
         footer="Kişisel portföy projesi, Amazon ile bağlantısı yoktur · Veri: Amazon Last Mile Routing Research Challenge "
                "(AWS Open Data, CC BY-NC 4.0) · Tasarım AWS'nin açık kaynak tasarım sistemi Cloudscape'e dayanır",
@@ -167,8 +170,9 @@ V = TOKENS["light" if st.context.theme.type == "light" else "dark"]
 st.html(f"""<style>
 :root{{--box:{V["box"]};--border:{V["border"]};--divider:{V["divider"]};--text:{V["text"]};--muted:{V["muted"]};
   --link:{V["link"]};--shadow:{V["shadow"]}}}
-header[data-testid="stHeader"]{{background:#0F141A;border-bottom:3px solid #FF9900}}
-[data-testid="stMainBlockContainer"]{{padding:4.1rem 2rem 2rem}}
+header[data-testid="stHeader"]{{background:#232F3E;border-bottom:1px solid #414D5C;height:3.1rem;min-height:3.1rem}}
+header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F6B7A}}
+[data-testid="stMainBlockContainer"]{{padding:3.8rem 2rem 2rem}}
 [data-testid="stHeading"] h1{{font-size:1.75rem;font-weight:700;padding:.2rem 0 .1rem}}
 [data-testid="stHeading"] h3{{font-size:1.1rem;font-weight:700;padding:0}}
 [data-testid="stHeading"] [data-testid="stTooltipIcon"] svg{{color:var(--link) !important;stroke:var(--link) !important}}
@@ -182,9 +186,17 @@ header[data-testid="stHeader"]{{background:#0F141A;border-bottom:3px solid #FF99
 .st-key-examples button{{background:transparent !important;border:2px solid var(--link) !important;color:var(--link) !important;
   font-weight:700;border-radius:20px !important;padding:.25rem 1rem !important}}
 .st-key-examples button[aria-checked="true"]{{background:var(--link) !important;color:#FFFFFF !important}}
-.st-key-lang{{position:fixed;top:.55rem;right:3.6rem;z-index:999991;width:auto}}
+.st-key-topsearch{{position:fixed;top:.42rem;left:16.5rem;width:min(36rem,36vw);z-index:999991}}
+.st-key-topsearch [data-testid="stTextInputRootElement"]{{background:#0F141A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23B6BEC9' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") no-repeat .7rem center;
+  border:1px solid #7D8998 !important;border-radius:8px;min-height:2.1rem}}
+.st-key-topsearch input{{background:transparent !important;color:#FFFFFF !important;padding:.3rem .6rem .3rem 2.1rem !important;font-size:.9rem}}
+.st-key-topsearch input::placeholder{{color:#B6BEC9 !important;font-style:italic}}
+.st-key-lang{{position:fixed;top:.42rem;right:3.4rem;z-index:999991;width:auto;align-items:center;gap:1rem}}
 .st-key-lang button{{background:transparent !important;color:#FFFFFF !important;border-color:rgba(255,255,255,.35) !important}}
 .st-key-lang button[aria-checked="true"]{{background:#FF9900 !important;color:#0F141A !important;border-color:#FF9900 !important}}
+.topright{{display:flex;align-items:center;gap:1rem;color:#FFFFFF;font-size:.88rem;white-space:nowrap}}
+.topright a{{display:flex;color:#FFFFFF}} .topright .sep{{width:1px;height:1.3rem;background:#5F6B7A}}
+@media (max-width:1000px){{.st-key-topsearch,.topright .region,.topright .sep{{display:none}}}}
 header [data-testid="stMainMenu"] button{{color:#FFFFFF}}
 .crumb{{font-size:.88rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
 .boxdesc{{color:var(--muted);font-size:.88rem;line-height:1.45;margin:.35rem 0 .9rem}}
@@ -272,10 +284,63 @@ def bar_chart(df):
 
 
 # top bar: language switch level with the logo
-with st.container(key="lang"):
+GITHUB = "https://github.com/asilburakcan/Ops-Analyst-Agent"
+_GH_PATH = ("M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49"
+            "-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52"
+            ".28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18"
+            " 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07"
+            "-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42"
+            "-3.58-8-8-8z")
+GH_ICON = ('<img alt="GitHub" width="20" height="20" src="data:image/svg+xml;base64,' + base64.b64encode(
+    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#FFFFFF" d="{_GH_PATH}"/></svg>'.encode()
+).decode() + '">')
+
+def answer(question, status):
+    """Run the agents for one question and show SQL, result and the analyst's notes; log it to Athena."""
+    if agents.is_write_request(question):
+        st.warning(T["blocked"])  # refused before any LLM call or query
+        return
+    status.html(THINKING.format(T["step_sql"]))
+    if questions_today() >= DAILY_LIMIT:
+        status.empty()
+        st.warning(T["limit"].format(n=DAILY_LIMIT))
+        return
+    sql, df, repairs = agents.write_sql(question)
+    analysis = {}
+    if df is not None:
+        status.html(THINKING.format(T["step_analyst"]))
+        analysis = agents.analyze(question, df.head(20).to_dict("records"), lang)
+    status.empty()
+    with st.container(key="box-answer"):
+        with st.expander(T["sql"], expanded=False):
+            st.code(sql, language="sql")
+            if repairs:
+                st.caption(T["repaired"].format(n=repairs))
+        if df is None:
+            st.error(T["failed"].format(n=repairs))
+        else:
+            st.dataframe(df.head(50), hide_index=True, use_container_width=True)
+            if analysis:
+                notes([(T["finding"], analysis.get("finding", ""), T["h_finding"]),
+                       (T["cause"], analysis.get("root_cause_hypothesis", ""), T["h_cause"]),
+                       (T["idea"], analysis.get("automation_idea", ""), T["h_idea"])])
+    b.save(pd.DataFrame([{"asked_ts": pd.Timestamp.now(tz="UTC").tz_localize(None).floor("s"),
+                          "question": question, "generated_sql": sql, "executed": int(df is not None),
+                          "repairs": repairs, "finding": analysis.get("finding", "")}]),
+           "agent_questions")
+
+
+# top bar, like the AWS console: question box in the middle; region, GitHub and language on the right
+with st.container(key="lang", horizontal=True):
+    region_slot = st.empty()
     lang = "tr" if st.segmented_control("Language", ["EN", "TR"], default="EN",
                                         label_visibility="collapsed") == "TR" else "en"
 T = TEXT[lang]
+region_slot.html(f'<div class="topright"><span class="region">{escape(T["region"])}</span><span class="sep"></span>'
+                 f'<a href="{GITHUB}" target="_blank" title="GitHub">{GH_ICON}</a></div>')
+with st.container(key="topsearch"):
+    st.text_input("Ask the data", key="topq", placeholder=T["top_placeholder"], label_visibility="collapsed",
+                  autocomplete="off", on_change=lambda: st.session_state.update(run_top=True))
 
 st.html(f'<div class="crumb"><b>{escape(T["crumb"])}</b> &nbsp;›&nbsp; {escape(T["title"])}</div>')
 st.title(T["title"], anchor=False)
@@ -329,37 +394,18 @@ with ask:
             submitted = st.form_submit_button(T["button"], type="primary")
         status = st.empty()  # pulsing grey line under the button while the agents work
 
-    if submitted and question and agents.is_write_request(question):
-        st.warning(T["blocked"])  # refused before any LLM call or query
-    elif submitted and question:
-        status.html(THINKING.format(T["step_sql"]))
-        if questions_today() >= DAILY_LIMIT:
-            status.empty()
-            st.warning(T["limit"].format(n=DAILY_LIMIT))
-        else:
-            sql, df, repairs = agents.write_sql(question)
-            analysis = {}
-            if df is not None:
-                status.html(THINKING.format(T["step_analyst"]))
-                analysis = agents.analyze(question, df.head(20).to_dict("records"), lang)
-            status.empty()
-            with st.container(key="box-answer"):
-                with st.expander(T["sql"], expanded=False):
-                    st.code(sql, language="sql")
-                    if repairs:
-                        st.caption(T["repaired"].format(n=repairs))
-                if df is None:
-                    st.error(T["failed"].format(n=repairs))
-                else:
-                    st.dataframe(df.head(50), hide_index=True, use_container_width=True)
-                    if analysis:
-                        notes([(T["finding"], analysis.get("finding", ""), T["h_finding"]),
-                               (T["cause"], analysis.get("root_cause_hypothesis", ""), T["h_cause"]),
-                               (T["idea"], analysis.get("automation_idea", ""), T["h_idea"])])
-            b.save(pd.DataFrame([{"asked_ts": pd.Timestamp.now(tz="UTC").tz_localize(None).floor("s"),
-                                  "question": question, "generated_sql": sql, "executed": int(df is not None),
-                                  "repairs": repairs, "finding": analysis.get("finding", "")}]),
-                   "agent_questions")
+    if submitted and question:
+        answer(question, status)
+
+
+@st.dialog(T["ask"], width="large")
+def top_dialog(question):
+    st.caption(question)
+    answer(question, st.empty())
+
+
+if st.session_state.pop("run_top", False) and st.session_state.get("topq"):
+    top_dialog(st.session_state.topq)
 
 with how, st.container(key="box-how"):
     st.markdown(T["how"])
