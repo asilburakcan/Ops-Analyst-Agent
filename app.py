@@ -59,8 +59,10 @@ TEXT = {
         h_auc="How well the model ranks failing packages above the rest (0.5 = coin flip, 1.0 = perfect). "
               "Baseline = each station's past fail rate: AUC {base:.2f}.",
         k_gold="SQL agent golden set", d_gold="{n} questions",
-        h_gold="Share of golden-set questions where the agent's SQL returned the same result as the reference SQL.",
-        acc="SQL agent accuracy: {ok} / {n} ({pct}%)", acc_sub="Golden set of questions, each checked against a reference SQL",
+        h_gold="A small, hand-written test set: each question has a reference SQL, and the agent's result must match it. "
+               "It shows the agent is reliable on questions like these, not that every answer is right. Every mistake found "
+               "is added as a new question.",
+        acc="Checked against a small golden set: {ok} of {n} questions match the reference SQL",
         report="Today's report", report_sub="Written by the analyst agent from the model's scan",
         finding="Finding", cause="Root cause", idea="Automation idea",
         h_report="Written automatically every day at 05:00 UTC (08:00 Turkey): cron on EC2 runs pipeline.py, which reads the "
@@ -114,8 +116,10 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         h_auc="Modelin başarısız olacak paketleri diğerlerinin önüne sıralama başarısı (0,5 = yazı tura, 1,0 = kusursuz). "
               "Baz model = istasyonun geçmiş başarısızlık oranı: AUC {base:.2f}.",
         k_gold="Altın set (SQL)", d_gold="{n} soru",
-        h_gold="Ajanın SQL'inin referans SQL ile aynı sonucu verdiği altın set sorularının oranı.",
-        acc="SQL ajanı doğruluğu: {ok} / {n} (%{pct})", acc_sub="Her biri referans SQL ile kontrol edilen altın set soruları",
+        h_gold="Küçük, elle yazılmış bir test seti: her sorunun bir referans SQL'i var ve ajanın sonucu onunla aynı olmalı. "
+               "Ajanın bu tür sorularda güvenilir olduğunu gösterir, her cevabın doğru olduğunu değil. Bulunan her hata "
+               "yeni bir soru olarak eklenir.",
+        acc="Küçük bir altın setle kontrol edildi: {n} sorudan {ok} tanesi referans SQL ile aynı sonucu veriyor",
         report="Bugünkü rapor", report_sub="Analist ajanı tarafından modelin taramasından yazıldı",
         finding="Bulgu", cause="Kök neden", idea="Otomasyon önerisi",
         h_report="Her gün 05:00 UTC'de (TR 08:00) otomatik yazılır: EC2'deki cron pipeline.py'yi çalıştırır; paketler "
@@ -205,9 +209,6 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
 @media (max-width:1000px){{.st-key-topsearch,.topright .region,.topright .sep{{display:none}}}}
 header [data-testid="stMainMenu"] button{{color:#FFFFFF}}
 .crumb{{font-size:.88rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
-.acc{{border:2px solid var(--link);border-radius:.6rem;padding:.6rem .85rem;margin:.1rem 0 .8rem}}
-.acc .lab{{display:flex;align-items:center;gap:.35rem;font-weight:700;font-size:.95rem;color:var(--text)}}
-.acc .sub{{font-size:.85rem;color:var(--muted);margin-top:.15rem}}
 .boxdesc{{color:var(--muted);font-size:.88rem;line-height:1.45;margin:.35rem 0 .9rem}}
 .kv{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));row-gap:1rem}}
 .kv>div{{padding:0 1.25rem;border-left:1px solid var(--divider);min-width:0}}
@@ -386,8 +387,7 @@ with ask:
         box_header(T["ask"], T["ask_sub"], T["h_ask"])
         if len(golden):
             g = golden.iloc[0]
-            st.html(f'<div class="acc"><div class="lab">{escape(T["acc"].format(ok=round(g.accuracy * g.questions), n=g.questions, pct=round(g.accuracy * 100)))} '
-                    f'{tip(T["h_gold"])}</div><div class="sub">{escape(T["acc_sub"])}</div></div>')
+            st.caption(T["acc"].format(ok=round(g.accuracy * g.questions), n=g.questions), help=T["h_gold"])
         st.caption(T["quota"].format(left=max(DAILY_LIMIT - questions_today(), 0), n=DAILY_LIMIT))
         pick = st.pills("Examples", EXAMPLES, label_visibility="collapsed", key="examples")
         with st.form("ask", border=False):
