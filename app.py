@@ -169,7 +169,7 @@ header[data-testid="stHeader"]{{background:#0F141A;border-bottom:3px solid #FF99
 [data-testid="stMainBlockContainer"]{{padding:4.1rem 2rem 2rem}}
 [data-testid="stHeading"] h1{{font-size:1.75rem;font-weight:700;padding:.2rem 0 .1rem}}
 [data-testid="stHeading"] h3{{font-size:1.1rem;font-weight:700;padding:0}}
-[data-testid="stTooltipIcon"] svg{{color:var(--link);stroke:var(--link)}}
+[data-testid="stHeading"] [data-testid="stTooltipIcon"] svg{{color:var(--link) !important;stroke:var(--link) !important}}
 [data-testid="stTab"]{{font-weight:700;color:var(--muted)}}
 [data-testid="stTab"][aria-selected="true"]{{color:var(--link)}}
 [data-testid="stTabs"] .react-aria-SelectionIndicator{{background:var(--link) !important;height:4px !important;border-radius:4px 4px 0 0}}
@@ -185,7 +185,7 @@ header[data-testid="stHeader"]{{background:#0F141A;border-bottom:3px solid #FF99
 .st-key-lang button[aria-checked="true"]{{background:#FF9900 !important;color:#0F141A !important;border-color:#FF9900 !important}}
 header [data-testid="stMainMenu"] button{{color:#FFFFFF}}
 .crumb{{font-size:.88rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
-.boxdesc{{color:var(--muted);font-size:.88rem;margin:-.4rem 0 .4rem}}
+.boxdesc{{color:var(--muted);font-size:.88rem;line-height:1.45;margin:.35rem 0 .9rem}}
 .kv{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));row-gap:1rem}}
 .kv>div{{padding:0 1.25rem;border-left:1px solid var(--divider);min-width:0}}
 .kv>div:first-child{{border-left:none;padding-left:0}}
