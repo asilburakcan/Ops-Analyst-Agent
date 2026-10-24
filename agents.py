@@ -87,9 +87,11 @@ def write_sql(question):
     return sql, None, MAX_REPAIRS
 
 
-def analyze(question, result):
+def analyze(question, result, lang="en"):
     """Analyst agent: any JSON-able result -> {finding, root_cause_hypothesis, automation_idea}."""
-    txt = chat(b.ANALYST_MODEL, [{"role": "system", "content": ANALYST_PROMPT},
+    prompt = ANALYST_PROMPT + ("\nWrite the JSON values in Turkish; keep JSON keys, numbers and codes as they are."
+                               if lang == "tr" else "")
+    txt = chat(b.ANALYST_MODEL, [{"role": "system", "content": prompt},
                                  {"role": "user", "content": json.dumps({"question": question, "result": result}, default=str)}])
     try:
         return json.loads(re.search(r"\{.*\}", txt, re.DOTALL).group(0))
@@ -97,9 +99,22 @@ def analyze(question, result):
         return {}
 
 
-def ask(question):
+def translate(texts, lang="tr"):
+    """Translate a dict of report texts with the analyst model; keys, numbers and codes stay as they are."""
+    if lang != "tr":
+        return texts
+    txt = chat(b.ANALYST_MODEL, [{"role": "system", "content": "Translate the JSON values into Turkish. Keep keys, "
+                                  "numbers, station codes and column names. Return JSON only."},
+                                 {"role": "user", "content": json.dumps(texts, ensure_ascii=False)}])
+    try:
+        return {**texts, **json.loads(re.search(r"\{.*\}", txt, re.DOTALL).group(0))}
+    except Exception:
+        return texts
+
+
+def ask(question, lang="en"):
     sql, df, repairs = write_sql(question)
-    analysis = analyze(question, df.head(20).to_dict("records")) if df is not None else {}
+    analysis = analyze(question, df.head(20).to_dict("records"), lang) if df is not None else {}
     return {"sql": sql, "df": df, "repairs": repairs, "analysis": analysis}
 
 
