@@ -10,26 +10,28 @@ import json
 import re
 import sys
 import time
+from pathlib import Path
 
 import backend as b
 
 MAX_REPAIRS = 2
 FORBIDDEN = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|merge|unload|msck|call)\b", re.I)
 
-NOTES = """lm_routes: 1 row per delivery route. route_score = route quality rating: 'High', 'Medium', 'Low'.
-  "station" in a question means lm_routes.station_code (the delivery station a route starts from).
-lm_stops: 1 row per stop, key (route_id, stop_id). type: 'Station' (the depot itself, visit_order 0, never has
-  packages) or 'Dropoff'. Do not filter on type unless the question is about stops.
-  visit_order = the order the driver actually visited the stops.
-lm_packages: 1 row per package at a stop, joins lm_stops on (route_id, stop_id).
-  scan_status: 'DELIVERED', 'DELIVERY_ATTEMPTED', 'REJECTED'. Failed delivery = scan_status <> 'DELIVERED'.
-  tw_start / tw_end are NULL when the package has no delivery time window.
-Percentages are 0-100. Round averages, sums and percentages to 2 decimals."""
+# The glossary in DATA_DICTIONARY.md is the shared vocabulary of both agents and the docs.
+_DOC = (Path(__file__).parent / "DATA_DICTIONARY.md").read_text(encoding="utf-8")
+GLOSSARY = _DOC.split("## Glossary", 1)[1].split("\n## ", 1)[0].strip()
 
-ANALYST_PROMPT = """You are a last-mile operations analyst agent. You get a business question and the data result.
-Return JSON only: {"finding": "max 30 words, with key numbers",
+ANALYST_PROMPT = f"""You are a last-mile operations analyst agent. You get a business question and the data result.
+Terms (use them exactly; packages, stops and routes are different units):
+{GLOSSARY}
+Rules for root_cause_hypothesis:
+- Name a cause only if the result itself compares groups (e.g. fail rate with vs without a time window).
+- If the result only lists values (a top station, a maximum, a count), it shows no cause: write
+  "Not shown by this result; check <the comparison that would test it>".
+- A result can combine separate answers (e.g. a station and a package size); never link them as cause and effect.
+Return JSON only: {{"finding": "max 30 words, with key numbers and correct units",
 "root_cause_hypothesis": "max 25 words, only from fields in the data; if the data cannot explain it, name the check that would",
-"automation_idea": "max 25 words: a manual process this finding suggests automating"}"""
+"automation_idea": "max 25 words: a manual process this finding suggests automating"}}"""
 
 
 @functools.cache
@@ -42,7 +44,9 @@ def sql_prompt():
     return f"""You are a SQL analyst agent. Write ONE read-only query that answers the user's question.
 Dialect: Amazon Athena (Trino SQL). Round with round(x, 2). Never use :: casts.
 {schema}
-{NOTES}
+Terms:
+{GLOSSARY}
+Percentages are 0-100. Round averages, sums and percentages to 2 decimals.
 Return only the columns needed. Output only the SQL."""
 
 

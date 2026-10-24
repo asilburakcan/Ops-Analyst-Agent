@@ -27,7 +27,8 @@ EC2: cron runs `python pipeline.py` every day at 05:00 UTC. Credentials come fro
 | `backend.py` | The only file that talks to AWS: `query()` (Athena), `save()` (S3 + Glue), `llm()` (Groq, or Bedrock with `LLM=bedrock`) |
 | `ingest.py` | Public S3 → `lm_routes`, `lm_stops`, `lm_packages` in own S3 + Glue, with data checks |
 | `model.py` | Failed-delivery risk model, time-split validation, daily risk flags |
-| `agents.py` | SQL agent (self-repair) and analyst agent |
+| `agents.py` | SQL agent (self-repair) and analyst agent, both grounded in the glossary of `DATA_DICTIONARY.md` |
+| `DATA_DICTIONARY.md` | Terms, tables and columns; its glossary is loaded into both agents' prompts |
 | `eval.py` | Golden-set check of the SQL agent |
 | `pipeline.py` | The single entry point that cron triggers |
 | `app.py` | Streamlit operator view: today's report, risk flags by station, and a question box for the agents |
@@ -42,6 +43,8 @@ EC2: cron runs `python pipeline.py` every day at 05:00 UTC. Credentials come fro
 | `lm_routes` | 6,112 | a route |
 | `lm_stops` | 904,527 | a stop on a route |
 | `lm_packages` | 1,457,175 | a package at a stop |
+
+Every column and term is described in [DATA_DICTIONARY.md](DATA_DICTIONARY.md).
 
 Data checks run on every ingest. The run stops if a package has no stop, a stop has no visit order or a row is duplicated. Two real data facts are reported, not removed:
 - 6,515 dropoff stops have no `zone_id`.
