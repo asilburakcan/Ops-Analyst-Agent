@@ -16,7 +16,7 @@ EXAMPLES = ["Which station has the highest failed delivery rate?",
             "Failed delivery percentage for packages with and without a time window.",
             "Average number of stops per route, per route_score."]
 
-st.set_page_config(page_title="Ops Analyst Agent", page_icon="📦", layout="wide")
+st.set_page_config(page_title="Ops Analyst Agent", layout="wide")
 
 
 @st.cache_data(ttl=600, show_spinner=False)
