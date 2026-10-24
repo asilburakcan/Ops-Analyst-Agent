@@ -286,7 +286,11 @@ with today:
 with ask:
     st.subheader(T["ask"], anchor=False, help=T["h_ask"])
     st.caption(T["ask_sub"])
-    pick = st.pills("Examples", EXAMPLES, label_visibility="collapsed")
+    blue = "#0972D3" if st.context.theme.type == "light" else "#539FE5"  # AWS link blue, lighter on navy
+    st.html(f"""<style>.st-key-examples button{{background:transparent !important;border:2px solid {blue} !important;
+      color:{blue} !important;font-weight:700;border-radius:99px !important;padding:.3rem 1rem !important}}
+      .st-key-examples button[aria-checked="true"]{{background:{blue} !important;color:#FFFFFF !important}}</style>""")
+    pick = st.pills("Examples", EXAMPLES, label_visibility="collapsed", key="examples")
     with st.form("ask", border=False):
         question = st.text_input("Question", value=pick or "", label_visibility="collapsed", placeholder=T["placeholder"],
                                  autocomplete="off")
