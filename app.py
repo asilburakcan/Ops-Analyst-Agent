@@ -134,7 +134,7 @@ def card(title, text):
 
 
 # language switch pinned to the top bar, level with the logo
-st.html("<style>.st-key-lang{position:fixed;top:.55rem;right:3.5rem;z-index:999991;width:auto}</style>")
+st.html("<style>.st-key-lang{position:fixed;top:.55rem;right:1rem;z-index:999991;width:auto}</style>")
 with st.container(key="lang"):
     lang = "tr" if st.segmented_control("Language", ["EN", "TR"], default="EN",
                                         label_visibility="collapsed") == "TR" else "en"
