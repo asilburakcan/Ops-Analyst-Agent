@@ -114,8 +114,7 @@ TEXT = {
         h_ask="Ask in plain language. The SQL agent writes and runs read-only Athena SQL and repairs its own errors; "
               "the analyst agent explains the result. Every question is saved to agent_questions.",
         legend_flagged="flagged", legend_failed="actually failed",
-        codes="Station codes: D = delivery station, then the city (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, "
-              "AU Austin) and a number. DLA8 is Los Angeles station 8.",
+        codes="D = delivery station + city (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, AU Austin) + number",
         note="Personal portfolio project, not affiliated with Amazon.",
         chart="Flagged packages by station", axis="flagged packages (orange: actually failed)",
         chart_sub="Red is the real outcome in the data: the check that the flags are right.",
@@ -198,8 +197,7 @@ Code, data dictionary and CI/CD: [GitHub](https://github.com/asilburakcan/Ops-An
         h_ask="Soruyu doğal dille yaz. SQL ajanı salt okunur Athena SQL'ini yazıp çalıştırır ve hatasını kendi düzeltir; "
               "analist ajanı sonucu yorumlar. Her soru agent_questions tablosuna kaydedilir.",
         legend_flagged="işaretlenen", legend_failed="gerçekte başarısız",
-        codes="İstasyon kodları: D = teslimat istasyonu, ardından şehir (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, "
-              "AU Austin) ve numara. DLA8, Los Angeles'taki 8 numaralı istasyon.",
+        codes="D = teslimat istasyonu + şehir (LA Los Angeles, SE Seattle, CH Chicago, BO Boston, AU Austin) + numara",
         note="Kişisel portföy projesi; Amazon ile bağlantısı yoktur.",
         chart="İstasyona göre işaretlenen paketler", axis="işaretlenen paketler (turuncu: gerçekte başarısız)",
         chart_sub="Kırmızı, verideki gerçek sonuç: işaretlerin doğruluğunun kontrolü.",
@@ -247,15 +245,16 @@ st.html(f"""<style>
   --link:{V["link"]};--shadow:{V["shadow"]}}}
 header[data-testid="stHeader"]{{background:#232F3E;border-bottom:1px solid #414D5C;height:3.1rem;min-height:3.1rem}}
 header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F6B7A}}
-[data-testid="stMainBlockContainer"]{{padding:3.8rem 2rem 2rem}}
-[data-testid="stHeading"] h1{{font-size:1.75rem;font-weight:700;padding:.2rem 0 .1rem}}
-[data-testid="stHeading"] h3{{font-size:1.1rem;font-weight:700;padding:0}}
+[data-testid="stMainBlockContainer"]{{padding:3.6rem 2rem 1.2rem}}
+[data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"]{{gap:.55rem}}
+[data-testid="stHeading"] h1{{font-size:1.45rem;font-weight:700;padding:0}}
+[data-testid="stHeading"] h3{{font-size:1.02rem;font-weight:700;padding:0 0 .3rem}}
 [data-testid="stHeading"] [data-testid="stTooltipIcon"] svg{{color:var(--link) !important;stroke:var(--link) !important}}
 [data-testid="stTab"]{{font-weight:700;color:var(--muted)}}
 [data-testid="stTab"][aria-selected="true"]{{color:var(--link)}}
 [data-testid="stTabs"] .react-aria-SelectionIndicator{{background:var(--link) !important;height:4px !important;border-radius:4px 4px 0 0}}
 [class*="st-key-box"]{{background:var(--box);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);
-  padding:1.1rem 1.25rem 1.25rem}}
+  padding:.8rem 1.15rem .9rem}}
 [data-testid="stBaseButton-primaryFormSubmit"]{{background:#FF9900 !important;color:#000716 !important;border:none !important;
   border-radius:20px !important;font-weight:700 !important;padding:.3rem 1.3rem !important}}
 .st-key-examples button{{background:transparent !important;border:2px solid var(--link) !important;color:var(--link) !important;
@@ -272,29 +271,32 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
 .topright{{display:flex;align-items:center;gap:1rem;color:#FFFFFF;font-size:.88rem;white-space:nowrap}}
 .topright a{{display:flex;color:#FFFFFF}} .topright .sep{{width:1px;height:1.3rem;background:#5F6B7A}}
 @media (max-width:1000px){{.st-key-topsearch,.topright .region,.topright .sep{{display:none}}}}
-.crumb{{font-size:.88rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
-.boxdesc{{color:var(--muted);font-size:.88rem;line-height:1.45;margin:.35rem 0 .9rem}}
+.crumb{{font-size:.8rem;color:var(--muted)}} .crumb b{{color:var(--link);font-weight:700}}
+.boxdesc{{color:var(--muted);font-size:.84rem;line-height:1.4;margin:.1rem 0 .45rem}}
 .kv{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));row-gap:1rem}}
 .kv>div{{padding:0 1.25rem;border-left:1px solid var(--divider);min-width:0}}
 .kv>div:first-child{{border-left:none;padding-left:0}}
 .kv .lab{{display:flex;align-items:center;gap:.35rem;font-weight:700;font-size:.92rem;color:var(--text)}}
-.kv .val{{font-size:2rem;line-height:1.25;margin:.3rem 0 .15rem;color:var(--link);font-variant-numeric:tabular-nums}}
-.kv .sub{{font-size:.85rem;color:var(--muted)}} .kv .txt{{font-size:.95rem;line-height:1.5;margin-top:.35rem;color:var(--text)}}
+.kv .val{{font-size:1.65rem;line-height:1.2;margin:.15rem 0 .05rem;color:var(--link);font-variant-numeric:tabular-nums}}
+.kv .sub{{font-size:.85rem;color:var(--muted)}} .kv .txt{{font-size:.86rem;line-height:1.42;margin-top:.2rem;color:var(--text)}}
 .tip{{position:relative;flex:none;width:.95rem;height:.95rem;border:1.5px solid var(--link);border-radius:50%;color:var(--link);
   font-size:.62rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:help}}
 .tip:hover::after{{content:attr(data-tip);position:absolute;top:1.3rem;left:-.6rem;width:16rem;white-space:normal;font-weight:400;
   background:var(--box);color:var(--text);border:1px solid var(--border);padding:.6rem .75rem;border-radius:.6rem;
   font-size:.82rem;line-height:1.45;z-index:1000;box-shadow:var(--shadow)}}
-.bars .row{{display:grid;grid-template-columns:3.2rem 1fr 3rem;align-items:center;gap:.6rem;height:1.55rem;font-size:.85rem}}
-.bars .track{{position:relative;height:.8rem}}
-.bars .b{{position:absolute;left:0;top:0;height:100%;border-radius:0 3px 3px 0;animation:grow 1s cubic-bezier(.2,.8,.2,1) both}}
-.bars .num{{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}}
-.codes{{font-size:.8rem;color:var(--muted);margin-top:.7rem;line-height:1.4}}
-.legend{{display:flex;gap:1.1rem;font-size:.82rem;color:var(--muted);margin:.1rem 0 .7rem}}
+.cols{{display:flex;align-items:flex-end;gap:.3rem;height:190px}}
+.cols .c{{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}}
+.cols .t{{position:relative;width:70%;min-height:2px}}
+.cols .b{{position:absolute;left:0;bottom:0;width:100%;border-radius:3px 3px 0 0;animation:rise 1s cubic-bezier(.2,.8,.2,1) both}}
+.cols .n{{font-size:.72rem;color:var(--muted);margin-bottom:.2rem;font-variant-numeric:tabular-nums}}
+.cols .l{{font-size:.7rem;margin-top:.35rem;color:var(--text);white-space:nowrap}}
+@media (max-width:1300px){{.cols{{height:210px}} .cols .l{{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.68rem}}}}
+.codes{{font-size:.74rem;color:var(--muted);margin-top:.45rem;line-height:1.35}}
+.legend{{display:flex;gap:1.1rem;font-size:.8rem;color:var(--muted);margin:0 0 .35rem}}
 .legend i{{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}}
 .thinking{{color:var(--muted);font-size:.92rem;animation:pulse 1.4s ease-in-out infinite}}
 .footer{{margin-top:2.2rem;padding-top:1rem;border-top:1px solid var(--divider);font-size:.78rem;color:var(--muted)}}
-@keyframes grow{{from{{width:0}}}} @keyframes pulse{{0%,100%{{opacity:.3}}50%{{opacity:1}}}}
+@keyframes rise{{from{{height:0}}}} @keyframes pulse{{0%,100%{{opacity:.3}}50%{{opacity:1}}}}
 </style>""")
 
 THINKING = "<div class='thinking'>{}</div>"
@@ -343,19 +345,18 @@ def notes(items):
 
 
 def bar_chart(df):
-    """Animated horizontal bars: flagged packages per station, actually failed on top."""
-    top = df.flagged.max()
-    rows = "".join(
-        f'<div class="row"><span>{escape(x.station_code)}</span><div class="track">'
-        f'<div class="b" style="width:{100 * x.flagged / top:.1f}%;background:{ACCENT};animation-delay:{i * 40}ms" '
-        f'title="{x.flagged} flagged"></div>'
-        f'<div class="b" style="width:{100 * x.actually_failed / top:.1f}%;background:{MUTED};'
-        f'animation-delay:{i * 40 + 300}ms" title="{x.actually_failed} failed"></div></div>'
-        f'<span class="num">{x.flagged}</span></div>'
+    """Animated column chart: flagged packages per station side by side, actually failed inside each column."""
+    top, h = df.flagged.max(), 150  # px of the tallest column
+    cols = "".join(
+        f'<div class="c" title="{escape(x.station_code)}: {x.flagged} flagged, {x.actually_failed} failed">'
+        f'<span class="n">{x.flagged}</span><div class="t" style="height:{h * x.flagged / top:.0f}px">'
+        f'<div class="b" style="height:100%;background:{ACCENT};animation-delay:{i * 40}ms"></div>'
+        f'<div class="b" style="height:{100 * x.actually_failed / x.flagged:.1f}%;background:{MUTED};'
+        f'animation-delay:{i * 40 + 300}ms"></div></div><span class="l">{escape(x.station_code)}</span></div>'
         for i, x in enumerate(df.sort_values("flagged", ascending=False).itertuples()))
     legend = (f'<div class="legend"><span><i style="background:{ACCENT}"></i>{escape(T["legend_flagged"])}</span>'
               f'<span><i style="background:{MUTED}"></i>{escape(T["legend_failed"])}</span></div>')
-    st.html(legend + f'<div class="bars">{rows}</div><div class="codes">{escape(T["codes"])}</div>')
+    st.html(legend + f'<div class="cols">{cols}</div><div class="codes">{escape(T["codes"])}</div>')
 
 
 # top bar: language switch level with the logo
@@ -415,7 +416,7 @@ today, ask, dash, how = st.tabs(T["tabs"])
 
 with today:
     with st.container(key="box-kpi"):
-        box_header(T["kpi_title"], T["kpi_sub"])
+        box_header(T["kpi_title"], help_text=T["kpi_sub"])
         items = [(T["k_scanned"], r.today_packages, 0, False, T["d_scanned"], T["h_scanned"]),
                  (T["k_flagged"], r.flagged, 0, False, T["d_flagged"], T["h_flagged"]),
                  (T["k_hit"], r.fail_rate_flagged, 1, True, T["d_hit"].format(lift=r.lift),
@@ -425,7 +426,7 @@ with today:
         kpis(items, lang)
 
     with st.container(key="box-report"):
-        box_header(T["report"], T["report_sub"], T["h_report"])
+        box_header(T["report"], help_text=T["report_sub"] + ". " + T["h_report"])
         rep = report_text(r.finding, r.root_cause_hypothesis, r.automation_idea, lang)
         notes([(T["finding"], rep["finding"], T["h_finding"]), (T["cause"], rep["cause"], T["h_cause"]),
                (T["idea"], rep["idea"], T["h_idea"])])
@@ -444,7 +445,7 @@ with today:
                          outcome=top.actual_failed.map({1: T["o_failed"], 0: T["o_ok"]}))
         view = top[["station_code", "stop_id", "package", "risk", "outcome"]].style.map(
             lambda v: f"color:{MUTED};font-weight:700" if v == T["o_failed"] else "color:#2EA44F", subset=["outcome"])
-        st.dataframe(view, hide_index=True, height=430, width="stretch",
+        st.dataframe(view, hide_index=True, height=236, width="stretch",
                      column_config={"station_code": T["col_station"], "stop_id": T["col_stop"], "package": T["col_pkg"],
                                     "risk": st.column_config.ProgressColumn(T["col_risk"], min_value=0, max_value=1,
                                                                             format="%.2f", help=T["h_risk"]),
