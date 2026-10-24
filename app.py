@@ -181,8 +181,10 @@ document.querySelectorAll('.val[data-to]:not([data-done])').forEach(el => {
   const to = +el.dataset.to, d = +el.dataset.dec, pct = el.dataset.pct === '1', t0 = performance.now();
   const f = new Intl.NumberFormat(el.dataset.loc, {style: pct ? 'percent' : 'decimal',
                                                   minimumFractionDigits: d, maximumFractionDigits: d});
-  const step = t => { const k = Math.min(1, (t - t0) / 1000), e = 1 - Math.pow(1 - k, 3);
-                      el.textContent = f.format(to * e); if (k < 1) requestAnimationFrame(step); };
+  const from = to * 0.85, ms = 2000;  // start just below the final value and ease out slowly
+  const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 4);
+                      el.textContent = f.format(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+  el.textContent = f.format(from);
   requestAnimationFrame(step);
 });
 </script>"""
