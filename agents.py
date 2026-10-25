@@ -36,6 +36,11 @@ Rules for root_cause_hypothesis:
 - A result can combine separate answers (e.g. a station and a package size); never link them as cause and effect.
 - The hypothesis must agree with the numbers in the result. If the groups do not differ in the direction a cause
   would predict, say the result does not support it.
+- One row (one station, one group) compares nothing, so it shows no cause.
+- Read what each column measures from its name: a share of the failures (e.g. pct_failed_on_low_score_routes:
+  % of failed packages that were on low-score routes) is not a fail rate.
+- route_score and visit_order are known only after the route: never use them as a cause to act on or in the
+  automation idea. Automation ideas use what is known before the van leaves.
 Return JSON only: {{"finding": "max 30 words, with key numbers and correct units",
 "root_cause_hypothesis": "max 25 words, only from fields in the data; if the data cannot explain it, name the check that would",
 "automation_idea": "max 25 words: a manual process this finding suggests automating"}}"""
