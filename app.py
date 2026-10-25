@@ -253,7 +253,11 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
 [data-testid="stHeading"] h3{{font-size:1.02rem;line-height:1.3;font-weight:700;padding:0}}
 [class*="st-key-box"] [data-testid="stHeading"]{{margin-bottom:.15rem}}
 [data-testid="stHeading"] [data-testid="stTooltipIcon"] svg{{color:var(--link) !important;stroke:var(--link) !important}}
-[data-testid="stTab"]{{font-weight:700;color:var(--muted)}}
+[data-testid="stTab"]{{font-weight:700;color:#414D5C;position:relative;padding:0 1.15rem !important;margin:0 !important}}
+[data-testid="stTab"]:first-of-type{{padding-left:0 !important}}
+[data-testid="stTab"] p{{font-size:1.06rem !important;font-weight:700 !important}}
+[data-testid="stTab"]:not(:last-of-type)::after{{content:"";position:absolute;right:0;top:22%;height:56%;border-right:1px solid var(--border)}}
+[data-testid="stTabs"] [role="tablist"]{{gap:0 !important}}
 [data-testid="stTab"][aria-selected="true"]{{color:var(--link)}}
 [data-testid="stTabs"] .react-aria-SelectionIndicator{{background:var(--link) !important;height:4px !important;border-radius:4px 4px 0 0}}
 [class*="st-key-box"]{{background:var(--box);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);
