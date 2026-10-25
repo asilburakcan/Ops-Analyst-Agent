@@ -82,8 +82,11 @@
     </div>
   </section>
   <section class="card" id="video">
-    <h2>Demo video <span class="muted" style="font-size:15px;font-weight:400">2 min, narrated</span></h2>
-        <video id="vid" controls preload="metadata" poster="img/poster_en.jpg" src="video/oaa_demo_en.mp4"></video>
+    <h2>Demo video <span class="muted" id="vlen" style="font-size:15px;font-weight:400">2 min, narrated</span></h2>
+    <div class="vtabs" role="tablist" aria-label="Video language">
+      <button class="on" role="tab" aria-selected="true" data-v="en" data-len="2 min, narrated">English</button><button role="tab" aria-selected="false" data-v="tr" data-len="2 min, narrated in Turkish" lang="tr">Türkçe</button>
+    </div>
+    <video id="vid" controls preload="metadata" poster="img/poster_en.jpg" src="video/oaa_demo_en.mp4"></video>
   </section>
 
   <section class="card">
@@ -155,8 +158,12 @@ WHERE r.station_code = &#x27;DLA3&#x27;</pre></details>
 <script>
   const vid = document.getElementById("vid");
   document.querySelectorAll(".vtabs button").forEach(b => b.onclick = () => {
-    document.querySelectorAll(".vtabs button").forEach(x => x.classList.toggle("on", x === b));
+    if (b.classList.contains("on")) return;
+    document.querySelectorAll(".vtabs button").forEach(x => {
+      x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b);
+    });
     vid.poster = `img/poster_${b.dataset.v}.jpg`; vid.src = `video/oaa_demo_${b.dataset.v}.mp4`;
+    document.getElementById("vlen").textContent = b.dataset.len;
   });
   if (window.__toVideo) window.addEventListener("load", () => setTimeout(() =>
     document.getElementById("video").scrollIntoView({behavior: "smooth"}), 600));
