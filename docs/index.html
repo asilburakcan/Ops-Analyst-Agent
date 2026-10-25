@@ -70,13 +70,13 @@
   <section class="card" id="results">
     <div class="kpis">
       <div class="kpi"><small>Model AUC</small><b>0.80</b><span>baselines 0.59 / 0.58</span></div>
-      <div class="kpi"><small>Fail rate in flagged 1%</small><b>5.4%</b><span>about 9× the 0.62% average</span></div>
-      <div class="kpi"><small>SQL agent golden set</small><b>12 / 12</b><span>match the reference SQL</span></div>
+      <div class="kpi"><small>Fail rate in flagged 1%</small><b>~5%</b><span>around 8× the 0.62% average</span></div>
+      <div class="kpi"><small>SQL AI agent golden set</small><b>12 / 12</b><span>match the reference SQL</span></div>
       <div class="kpi"><small>Server time per day</small><b>~10 min</b><span>starts, runs, stops itself</span></div>
     </div>
   </section>
   <section class="card" id="video">
-    <h2>Demo video <span class="muted" style="font-size:15px;font-weight:400">95 s, narrated</span></h2>
+    <h2>Demo video <span class="muted" style="font-size:15px;font-weight:400">2 min, narrated</span></h2>
         <video id="vid" controls preload="metadata" poster="img/poster_en.jpg" src="video/oaa_demo_en.mp4"></video>
   </section>
 
@@ -84,8 +84,8 @@
     <h2>What it does</h2>
     <div class="grid3">
       <div><h3>Flags risky packages</h3><p class="muted">A LightGBM model scores every package before the vans leave and saves the riskiest 1% for review. It uses only what is known before departure.</p></div>
-      <div><h3>Writes the daily report</h3><p class="muted">An analyst agent turns the scan into a finding, a root cause backed by comparison tables and an automation idea.</p></div>
-      <div><h3>Answers questions</h3><p class="muted">A SQL agent writes Athena SQL, repairs failed queries and can only read. The analyst agent explains the result.</p></div>
+      <div><h3>Writes the daily report</h3><p class="muted">An analyst AI agent turns the scan into a finding, a root cause backed by comparison tables and an automation idea.</p></div>
+      <div><h3>Answers questions</h3><p class="muted">A SQL AI agent writes Athena SQL, repairs failed queries and can only read. The analyst AI agent explains the result.</p></div>
     </div>
   </section>
 
@@ -101,25 +101,22 @@
     <h2>Example question</h2>
     <div class="qa">
       <p><b>Question:</b> <span id="q">why DLA3 fail rate is 1.91% ? what is the root cause?</span></p>
-      <p><b>Finding:</b> <span id="f">DLA3 fail rate 1.91% (1080/56579). Failed packages average 11,842 cm³ vs 10,523 cm³ success; service time 135 s vs 81 s.</span></p>
-      <p><b>Root cause:</b> <span id="c">Higher parcel volume and longer service times are associated with failures; larger packages likely cause more handling delays leading to missed deliveries.</span></p>
-      <p><b>Automation idea:</b> <span id="i">Automate pre‑screening of parcels &gt;10,000 cm³ to assign dedicated drivers or earlier slots, reducing handling time and failure risk.</span></p>
+      <p><b>Finding:</b> <span id="f">DLA3 fail rate 1.91%; time‑windowed packages 3.87%, non‑window 1.69%; failed packages average 135.1 s service, 11,842 cm³ volume vs 81.15 s, 10,523 cm³.</span></p>
+      <p><b>Root cause:</b> <span id="c">Higher fail rate driven by time‑windowed, larger‑volume packages needing longer service times at DLA3.</span></p>
+      <p><b>Automation idea:</b> <span id="i">Automate scheduling extra buffer time for time‑windowed, large‑volume stops to reduce failures.</span></p>
     </div>
-    <details><summary>SQL written by the agent</summary><pre id="sql">SELECT
-    COUNT(*) AS total_packages,
-    SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END) AS failed_packages,
-    ROUND(100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 2) AS fail_rate_percent,
-    SUM(CASE WHEN p.scan_status = &#x27;DELIVERY_ATTEMPTED&#x27; THEN 1 ELSE 0 END) AS failed_delivery_attempted,
-    SUM(CASE WHEN p.scan_status = &#x27;REJECTED&#x27; THEN 1 ELSE 0 END) AS failed_rejected,
-    ROUND(
-        100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; AND p.has_time_window THEN 1 ELSE 0 END) /
-        NULLIF(SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END),0),
-        2
-    ) AS pct_failed_with_time_window,
+    <details><summary>SQL written by the SQL AI agent</summary><pre id="sql">SELECT
+    ROUND(100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END) / COUNT(*), 2) AS fail_rate_percent,
+    ROUND(100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; AND p.has_time_window THEN 1 ELSE 0 END) /
+          NULLIF(SUM(CASE WHEN p.has_time_window THEN 1 ELSE 0 END),0), 2) AS fail_rate_with_time_window_percent,
+    ROUND(100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; AND NOT p.has_time_window THEN 1 ELSE 0 END) /
+          NULLIF(SUM(CASE WHEN NOT p.has_time_window THEN 1 ELSE 0 END),0), 2) AS fail_rate_without_time_window_percent,
+    ROUND(AVG(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN p.planned_service_time_seconds END), 2) AS avg_planned_service_time_failed_sec,
+    ROUND(AVG(CASE WHEN p.scan_status = &#x27;DELIVERED&#x27; THEN p.planned_service_time_seconds END), 2) AS avg_planned_service_time_delivered_sec,
     ROUND(AVG(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN p.volume_cm3 END), 2) AS avg_volume_failed_cm3,
-    ROUND(AVG(CASE WHEN p.scan_status = &#x27;DELIVERED&#x27; THEN p.volume_cm3 END), 2) AS avg_volume_success_cm3,
-    ROUND(AVG(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN p.planned_service_time_seconds END), 2) AS avg_service_time_failed_sec,
-    ROUND(AVG(CASE WHEN p.scan_status = &#x27;DELIVERED&#x27; THEN p.planned_service_time_seconds END), 2) AS avg_service_time_success_sec
+    ROUND(AVG(CASE WHEN p.scan_status = &#x27;DELIVERED&#x27; THEN p.volume_cm3 END), 2) AS avg_volume_delivered_cm3,
+    ROUND(100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; AND p.depth_cm &gt; 50 THEN 1 ELSE 0 END) /
+          NULLIF(SUM(CASE WHEN p.depth_cm &gt; 50 THEN 1 ELSE 0 END),0), 2) AS fail_rate_large_depth_percent
 FROM lm_packages p
 JOIN lm_routes r
   ON p.route_id = r.route_id

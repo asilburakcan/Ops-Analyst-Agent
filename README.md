@@ -2,17 +2,17 @@
 
 An AWS system that finds last-mile packages likely to fail at the door, writes a daily operations report and answers operations questions in plain language.
 
-**[Video, 95 s](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)** · **[Project page](https://asilburakcan.github.io/Ops-Analyst-Agent/)**
+**[Video, 2 min](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)** · **[Project page](https://asilburakcan.github.io/Ops-Analyst-Agent/)**
 
-[![Watch the 95-second demo](docs/img/video_thumb.jpg)](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)
+[![Watch the 2-minute demo](docs/img/video_thumb.jpg)](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)
 
-*Click to watch the narrated demo (95 s, English).*
+*Click to watch the narrated demo (2 min, English).*
 
 ## What it does
 
 - **Risk model (LightGBM):** every morning it scores the day's packages before the vans leave and flags the riskiest 1% for review.
-- **Analyst agent:** writes the daily report: a finding, a root cause backed by comparison tables, and an automation idea.
-- **SQL agent:** turns a question into Athena SQL, runs it and repairs its own failed queries. It can only read.
+- **Analyst AI agent:** writes the daily report: a finding, a root cause backed by comparison tables, and an automation idea.
+- **SQL AI agent:** turns a question into Athena SQL, runs it and repairs its own failed queries. It can only read.
 - **Operator app:** today's scan, a question box and an executive dashboard, in English and Turkish.
 
 ## Tour
@@ -21,11 +21,11 @@ An AWS system that finds last-mile packages likely to fail at the door, writes a
 
 ![Today's scan](docs/img/tour_scan.gif)
 
-**Ask the data:** a question in plain English, the SQL the agent wrote, the result and the analyst's notes.
+**Ask the data:** why does DLA3 fail most? The SQL the SQL AI agent wrote, the result and the analyst AI agent's notes.
 
 ![Ask the data](docs/img/tour_ask.gif)
 
-**Executive dashboard:** network KPIs, a station priority map and the daily trend. The whole app also works in Turkish.
+**Executive dashboard:** DLA3 stands out on the priority map; the station table and a DLA3 filter confirm it.
 
 ![Executive dashboard](docs/img/tour_dash.gif)
 
@@ -36,8 +36,8 @@ Tested on 13 days the model never saw (356k packages, 2018-08-14 → 08-26):
 | | Result |
 |---|---|
 | Model AUC | **0.80** (station fail rate rule: 0.59, time window rule: 0.58) |
-| Fail rate in the flagged 1% | **5.4%**, about **9×** the 0.62% average |
-| SQL agent golden set | **12 / 12** questions match the reference SQL |
+| Fail rate in the flagged 1% | about **5%**, around **8×** the 0.62% average (the model is retrained daily, so it moves a little) |
+| SQL AI agent golden set | **12 / 12** questions match the reference SQL |
 
 Accuracy is not used: with 0.62% failures, "everything gets delivered" already scores 99.38%.
 The strongest signals are planned service time at the stop, packages per stop, station, time to the delivery window and route size. Packages with a delivery window fail about 4× more often (2.38% vs 0.62%).
@@ -85,8 +85,8 @@ The dataset is historical, so each daily run scores the same held-out days. Only
 | `backend.py` | The only file that talks to AWS: Athena queries, S3 + Glue writes, LLM calls |
 | `ingest.py` | Public S3 → three checked Parquet tables in own S3 + Glue |
 | `model.py` | Risk model, time-split test, daily risk flags and comparison tables |
-| `agents.py` | SQL agent (self-repair, read-only guard) and analyst agent |
-| `eval.py` | Golden-set check of the SQL agent |
+| `agents.py` | SQL AI agent (self-repair, read-only guard) and analyst AI agent |
+| `eval.py` | Golden-set check of the SQL AI agent |
 | `pipeline.py` | The daily entry point: model, report, optional golden set |
 | `app.py` | Streamlit app: today's scan, ask the data, executive dashboard |
 | `buildspec.yml`, `appspec.yml`, `scripts/` | Build check, deploy to EC2, daily job that stops the instance |
