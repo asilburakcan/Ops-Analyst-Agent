@@ -11,6 +11,10 @@ import boto3
 from dotenv import load_dotenv
 
 load_dotenv()
+# hosted secrets (e.g. Streamlit Cloud) can carry a stray space or newline, which breaks the AWS signature
+for _k in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION", "AWS_DEFAULT_REGION"):
+    if _k in os.environ:
+        os.environ[_k] = os.environ[_k].strip()
 
 REGION = os.getenv("AWS_REGION", "eu-central-1")
 BUCKET = os.environ["S3_BUCKET"]
