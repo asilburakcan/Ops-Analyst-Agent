@@ -2,9 +2,11 @@
 
 An AWS system that finds last-mile packages likely to fail at the door, writes a daily operations report and answers operations questions in plain language.
 
-**[Live demo](https://ops-analyst-agent.streamlit.app)** · **[Case study (PDF)](https://asilburakcan.github.io/Ops-Analyst-Agent/OAA_case_study.pdf)** · **[Project page](https://asilburakcan.github.io/Ops-Analyst-Agent/)**
+**[Live demo](https://ops-analyst-agent.streamlit.app)** · **[Video, 95 s](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)** · **[Case study (PDF)](https://asilburakcan.github.io/Ops-Analyst-Agent/OAA_case_study.pdf)** · **[Project page](https://asilburakcan.github.io/Ops-Analyst-Agent/)**
 
-![Ops Analyst Agent demo](docs/img/demo.gif)
+[![Watch the 95-second demo](docs/img/video_thumb.jpg)](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)
+
+*Click to watch the narrated demo (95 s, English).*
 
 ## What it does
 
@@ -12,6 +14,20 @@ An AWS system that finds last-mile packages likely to fail at the door, writes a
 - **Analyst agent:** writes the daily report: a finding, a root cause backed by comparison tables, and an automation idea.
 - **SQL agent:** turns a question into Athena SQL, runs it and repairs its own failed queries. It can only read.
 - **Operator app:** today's scan, a question box and an executive dashboard, in English and Turkish.
+
+## Tour
+
+**Today's scan:** the morning's KPIs, the analyst's report and the flags checked against what really happened.
+
+![Today's scan](docs/img/tour_scan.gif)
+
+**Ask the data:** a question in plain English, the SQL the agent wrote, the result and the analyst's notes.
+
+![Ask the data](docs/img/tour_ask.gif)
+
+**Executive dashboard:** network KPIs, a station priority map and the daily trend. The whole app also works in Turkish.
+
+![Executive dashboard](docs/img/tour_dash.gif)
 
 ## Results
 
@@ -36,11 +52,7 @@ The strongest signals are planned service time at the stop, packages per stop, s
 - **Demo:** the app runs on Streamlit Community Cloud with a read-only IAM user. Athena stops any query above 1 GB, and the question box allows 50 questions a day.
 - **LLM:** Groq (`gpt-oss-120b` for SQL, `gpt-oss-20b` for the analyst). `LLM=bedrock` runs the same agents on Amazon Bedrock with no other change.
 
-## Screenshots
-
-| Today's scan | Executive dashboard | Turkish interface |
-|---|---|---|
-| ![Today's scan](docs/img/app_scan.png) | ![Executive dashboard](docs/img/app_dash.png) | ![Turkish interface](docs/img/app_tr.png) |
+## Running on AWS
 
 <details><summary>AWS console: S3, Glue, Athena, CodePipeline, EC2</summary>
 

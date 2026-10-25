@@ -54,7 +54,7 @@
 <body>
 <header><div class="bar">
   <img src="img/logo.svg" alt="Ops Analyst Agent · Personal project · Asil Burak Can">
-  <nav><a href="#how">How it works</a><a href="#results">Results</a><a href="https://ops-analyst-agent.streamlit.app">Live demo</a><a href="https://github.com/asilburakcan/Ops-Analyst-Agent">GitHub</a></nav>
+  <nav><a href="#video">Video</a><a href="#how">How it works</a><a href="#results">Results</a><a href="https://ops-analyst-agent.streamlit.app">Live demo</a><a href="https://github.com/asilburakcan/Ops-Analyst-Agent">GitHub</a></nav>
 </div></header>
 <main>
   <section class="card">
@@ -63,7 +63,8 @@
     <p class="by">Personal project by Asil Burak Can · data: 2021 Amazon Last Mile Routing Research Challenge (6,112 real routes, July–August 2018)</p>
     <div class="btns">
       <a class="btn primary" href="https://ops-analyst-agent.streamlit.app">Open the live demo</a>
-            <a class="btn" href="OAA_case_study.pdf">Case study (PDF)</a>
+            <a class="btn" href="#video">Watch the video</a>
+      <a class="btn" href="OAA_case_study.pdf">Case study (PDF)</a>
       <a class="btn" href="https://github.com/asilburakcan/Ops-Analyst-Agent">Code on GitHub</a>
     </div>
   </section>
@@ -76,14 +77,10 @@
       <div class="kpi"><small>Server time per day</small><b>~10 min</b><span>starts, runs, stops itself</span></div>
     </div>
   </section>
-
-<!--LATER video
   <section class="card" id="video">
-    <h2>Demo video</h2>
-    <div class="vtabs"><button class="on" data-v="en">English</button><button data-v="tr">Türkçe</button></div>
-    <video id="vid" controls preload="metadata" poster="img/poster_en.jpg" src="video/oaa_demo_en.mp4"></video>
+    <h2>Demo video <span class="muted" style="font-size:15px;font-weight:400">95 s, narrated</span></h2>
+        <video id="vid" controls preload="metadata" poster="img/poster_en.jpg" src="video/oaa_demo_en.mp4"></video>
   </section>
-LATER-->
 
   <section class="card">
     <h2>What it does</h2>
@@ -98,23 +95,38 @@ LATER-->
     <h2>The app</h2>
     <div class="grid3">
       <figure><img src="img/app_scan.png" alt="Today's scan"><figcaption>Today's scan: KPIs, daily report, flags by station, riskiest packages</figcaption></figure>
-      <figure><img src="img/app_tr.png" alt="Turkish interface"><figcaption>The whole app also works in Turkish</figcaption></figure>
+      <figure><img src="img/app_ask.png" alt="Ask the data"><figcaption>Ask the data: question → SQL → result → analyst notes</figcaption></figure>
       <figure><img src="img/app_dash.png" alt="Executive dashboard"><figcaption>Executive dashboard: network KPIs, station priority map, trend</figcaption></figure>
     </div>
   </section>
-
-<!--LATER qa
   <section class="card" id="qa">
     <h2>Example question</h2>
     <div class="qa">
       <p><b>Question:</b> <span id="q">why DLA3 fail rate is 1.91% ? what is the root cause?</span></p>
-      <p><b>Finding:</b> <span id="f">__FINDING__</span></p>
-      <p><b>Root cause:</b> <span id="c">__CAUSE__</span></p>
-      <p><b>Automation idea:</b> <span id="i">__IDEA__</span></p>
+      <p><b>Finding:</b> <span id="f">DLA3 fail rate 1.91% (1080/56579). Failed packages average 11,842 cm³ vs 10,523 cm³ success; service time 135 s vs 81 s.</span></p>
+      <p><b>Root cause:</b> <span id="c">Higher parcel volume and longer service times are associated with failures; larger packages likely cause more handling delays leading to missed deliveries.</span></p>
+      <p><b>Automation idea:</b> <span id="i">Automate pre‑screening of parcels &gt;10,000 cm³ to assign dedicated drivers or earlier slots, reducing handling time and failure risk.</span></p>
     </div>
-    <details><summary>SQL written by the agent</summary><pre id="sql">__SQL__</pre></details>
+    <details><summary>SQL written by the agent</summary><pre id="sql">SELECT
+    COUNT(*) AS total_packages,
+    SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END) AS failed_packages,
+    ROUND(100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 2) AS fail_rate_percent,
+    SUM(CASE WHEN p.scan_status = &#x27;DELIVERY_ATTEMPTED&#x27; THEN 1 ELSE 0 END) AS failed_delivery_attempted,
+    SUM(CASE WHEN p.scan_status = &#x27;REJECTED&#x27; THEN 1 ELSE 0 END) AS failed_rejected,
+    ROUND(
+        100.0 * SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; AND p.has_time_window THEN 1 ELSE 0 END) /
+        NULLIF(SUM(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN 1 ELSE 0 END),0),
+        2
+    ) AS pct_failed_with_time_window,
+    ROUND(AVG(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN p.volume_cm3 END), 2) AS avg_volume_failed_cm3,
+    ROUND(AVG(CASE WHEN p.scan_status = &#x27;DELIVERED&#x27; THEN p.volume_cm3 END), 2) AS avg_volume_success_cm3,
+    ROUND(AVG(CASE WHEN p.scan_status &lt;&gt; &#x27;DELIVERED&#x27; THEN p.planned_service_time_seconds END), 2) AS avg_service_time_failed_sec,
+    ROUND(AVG(CASE WHEN p.scan_status = &#x27;DELIVERED&#x27; THEN p.planned_service_time_seconds END), 2) AS avg_service_time_success_sec
+FROM lm_packages p
+JOIN lm_routes r
+  ON p.route_id = r.route_id
+WHERE r.station_code = &#x27;DLA3&#x27;</pre></details>
   </section>
-LATER-->
 
   <section class="card arch" id="how">
     <h2>How it works</h2>
