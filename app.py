@@ -263,12 +263,13 @@ header [data-testid="stLogoLink"]{{padding-right:1rem;border-right:1px solid #5F
 .st-key-examples button{{background:transparent !important;border:2px solid var(--link) !important;color:var(--link) !important;
   font-weight:700;border-radius:20px !important;padding:.25rem 1rem !important}}
 .st-key-examples button[aria-checked="true"]{{background:var(--link) !important;color:#FFFFFF !important}}
-.st-key-topsearch{{position:fixed;top:.42rem;left:16.5rem;width:min(36rem,36vw);z-index:999991}}
+.st-key-topsearch{{position:fixed;top:.575rem;left:16.5rem;width:min(36rem,36vw);z-index:999991}}
 .st-key-topsearch [data-testid="stTextInputRootElement"]{{background:#0F141A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23B6BEC9' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") no-repeat .7rem center;
-  border:1px solid #7D8998 !important;border-radius:8px;min-height:2.1rem}}
-.st-key-topsearch input{{background:transparent !important;color:#FFFFFF !important;padding:.3rem .6rem .3rem 2.1rem !important;font-size:.9rem}}
+  border:1px solid #7D8998 !important;border-radius:8px;height:1.95rem;min-height:1.95rem}}
+.st-key-topsearch [data-testid="stTextInputRootElement"] > div, .st-key-topsearch input{{height:100% !important;min-height:0 !important}}
+.st-key-topsearch input{{background:transparent !important;color:#FFFFFF !important;padding:.18rem .6rem .18rem 2.1rem !important;font-size:.8rem}}
 .st-key-topsearch input::placeholder{{color:#B6BEC9 !important;font-style:italic}}
-.st-key-lang{{position:fixed;top:.42rem;right:1.2rem;z-index:999991;width:auto;align-items:center;gap:1rem}}
+.st-key-lang{{position:fixed;top:.55rem;right:1.2rem;z-index:999991;width:auto;align-items:center;gap:1rem}}
 .st-key-lang button{{background:transparent !important;color:#FFFFFF !important;border-color:rgba(255,255,255,.35) !important}}
 .st-key-lang button[aria-checked="true"]{{background:#FF9900 !important;color:#0F141A !important;border-color:#FF9900 !important}}
 .topright{{display:flex;align-items:center;gap:1rem;color:#FFFFFF;font-size:.88rem;white-space:nowrap}}
