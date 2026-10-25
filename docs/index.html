@@ -17,6 +17,8 @@
   .bar nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
   .bar nav a{color:#fff;text-decoration:none;font-size:14px;font-weight:600}
   main{max-width:1120px;margin:0 auto;padding:28px 16px 48px}
+  html{scroll-behavior:smooth}
+  section[id]{scroll-margin-top:76px}  /* anchor links (#video) land below the sticky header */
   .card{background:var(--box);border:1px solid var(--border);border-radius:16px;padding:22px 26px;margin:18px 0;box-shadow:0 1px 4px rgba(0,7,22,.08)}
   h1{font-size:34px;line-height:1.2;margin:0 0 8px}
   h2{font-size:22px;margin:0 0 12px}
@@ -50,6 +52,10 @@
   @media (max-width:800px){.kpis,.grid3{grid-template-columns:1fr 1fr}.thumbs{grid-template-columns:1fr 1fr}.kpi:nth-child(3){border-left:0;padding-left:0}h1{font-size:28px}}
   @media (max-width:520px){.kpis,.grid3,.thumbs{grid-template-columns:1fr}.kpi{border-left:0;padding-left:0}.bar nav{display:none}}
 </style>
+<script>
+  // #video: open at the top first, then glide down to the video (no instant jump)
+  if (location.hash === "#video") { window.__toVideo = true; history.replaceState(null, "", location.pathname + location.search); }
+</script>
 </head>
 <body>
 <header><div class="bar">
@@ -152,6 +158,8 @@ WHERE r.station_code = &#x27;DLA3&#x27;</pre></details>
     document.querySelectorAll(".vtabs button").forEach(x => x.classList.toggle("on", x === b));
     vid.poster = `img/poster_${b.dataset.v}.jpg`; vid.src = `video/oaa_demo_${b.dataset.v}.mp4`;
   });
+  if (window.__toVideo) window.addEventListener("load", () => setTimeout(() =>
+    document.getElementById("video").scrollIntoView({behavior: "smooth"}), 600));
 </script>
 </body>
 </html>
