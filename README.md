@@ -19,7 +19,8 @@ Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── S
         └── risk_flags, model_metrics, daily_reports ◄── model.py + analyst agent
 
 GitHub push ──► CodePipeline: Source ──► CodeBuild (compile + import check) ──► CodeDeploy ──► EC2
-EC2: cron runs `python pipeline.py` every day at 05:00 UTC. Credentials come from the instance IAM role.
+EventBridge Scheduler starts EC2 at 04:55 UTC ──► cron runs `pipeline.py` at 05:00 ──► the instance stops itself.
+Credentials come from the instance IAM role.
 ```
 
 | File | Job |
@@ -33,6 +34,7 @@ EC2: cron runs `python pipeline.py` every day at 05:00 UTC. Credentials come fro
 | `pipeline.py` | The single entry point that cron triggers |
 | `app.py` | Streamlit operator view: today's report, risk flags by station, and a question box for the agents |
 | `buildspec.yml`, `appspec.yml`, `scripts/deploy.sh` | CI/CD: build check, deploy to EC2, install packages and the daily cron job |
+| `scripts/daily.sh` | The daily job: runs `pipeline.py`, then stops the instance |
 
 ## Data
 
@@ -82,7 +84,7 @@ First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena
 - **IAM instance role** with S3, Athena, Glue and `AmazonSSMManagedInstanceCore`. No access keys on the server; the Groq key sits in a `chmod 600` `.env` that deploys never overwrite.
 - **CI/CD:** every push to `main` runs CodePipeline. CodeBuild compiles the code and imports every module; a failure stops the deploy. CodeDeploy copies the code to EC2 and `scripts/deploy.sh` updates packages and the cron job.
 - **Operator view:** `app.py` runs as a systemd service on `127.0.0.1:8501`. Open it with SSM port forwarding (`aws ssm start-session --document-name AWS-StartPortForwardingSession ...`); every question is saved to `agent_questions`.
-- **Daily run:** cron starts `pipeline.py` at 05:00 UTC. Results land in S3 and are queryable in Athena:
+- **Daily run:** EventBridge Scheduler starts the instance at 04:55 UTC, cron runs `scripts/daily.sh` at 05:00 (`pipeline.py`, then the instance stops itself), so EC2 runs about 10 minutes a day. A deploy needs a running instance: start it before pushing. Results land in S3 and are queryable in Athena:
   ```sql
   SELECT run_ts, auc, lift, agent_accuracy, finding FROM last_mile.daily_reports ORDER BY run_ts DESC LIMIT 5;
   ```
@@ -92,11 +94,12 @@ First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena
 2. EC2 with that role, 20 GiB disk. Install `git python3.11 cronie`, a 2 GB swap file and the CodeDeploy agent.
 3. On the server: clone the repo, create `venv`, write `.env` from `.env.example`, run `venv/bin/python pipeline.py --eval` once (it also ingests).
 4. CodeDeploy application + deployment group (EC2 tag `Name`), then a CodePipeline: GitHub source → CodeBuild (`buildspec.yml`) → CodeDeploy.
+5. EventBridge Scheduler: a daily schedule at 04:55 UTC that calls EC2 `StartInstances` for the instance (its role needs `ec2:StartInstances`).
 
 **About the data:** the dataset is historical (July–August 2018), so each daily run scores the same held-out days. The pipeline is built for live data: only the ingest source would change.
 
 Ask the SQL agent a single question: `venv/bin/python agents.py "Which station has the highest failed delivery rate?"`
 
-**Cost:** Downloads from the open-data bucket are free. The data in our S3 is 124 MB (Parquet tables, results and Athena output; the source JSON is 465 MB), a few cents per month. Athena charges $5 per TB scanned and an LLM run costs a few cents. Most of the cost is EC2 `t3.small` while it is running (about $0.024 per hour, ~$17/month). CodeBuild and CodeDeploy cost cents or nothing at this volume. Stop the instance when you don't need the daily run.
+**Cost:** Downloads from the open-data bucket are free. The data in our S3 is 124 MB (Parquet tables, results and Athena output; the source JSON is 465 MB), a few cents per month. Athena charges $5 per TB scanned and an LLM run costs a few cents. Most of the cost would be EC2 `t3.small` (about $0.024 per hour, ~$17/month if always on); running about 10 minutes a day brings it to cents. CodeBuild and CodeDeploy cost cents or nothing at this volume.
 
 **Safety:** The agent may only run a single `SELECT`, and write keywords are blocked. Give the Athena workgroup a bytes-scanned limit per query. No access keys are stored on the server and no inbound port is open.
