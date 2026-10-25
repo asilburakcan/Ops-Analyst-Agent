@@ -19,7 +19,7 @@ Own S3 bucket (Parquet) ──► Glue Data Catalog ──► Athena ◄── S
         └── risk_flags, model_metrics, daily_reports ◄── model.py + analyst agent
 
 GitHub push ──► CodePipeline: Source ──► CodeBuild (compile + import check) ──► CodeDeploy ──► EC2
-EventBridge Scheduler starts EC2 at 04:55 UTC ──► cron runs `pipeline.py` at 05:00 ──► the instance stops itself.
+EventBridge Scheduler starts EC2 at 04:55 UTC (07:55 Turkey) ──► cron runs `pipeline.py` at 05:00 ──► the instance stops itself.
 Credentials come from the instance IAM role.
 ```
 
@@ -84,7 +84,7 @@ First full AWS run (us-east-2, 2026-10-23): ingest → S3/Glue, model via Athena
 - **IAM instance role** with S3, Athena, Glue and `AmazonSSMManagedInstanceCore`. No access keys on the server; the Groq key sits in a `chmod 600` `.env` that deploys never overwrite.
 - **CI/CD:** every push to `main` runs CodePipeline. CodeBuild compiles the code and imports every module; a failure stops the deploy. CodeDeploy copies the code to EC2 and `scripts/deploy.sh` updates packages and the cron job.
 - **Operator view:** `app.py` runs as a systemd service on `127.0.0.1:8501`. Open it with SSM port forwarding (`aws ssm start-session --document-name AWS-StartPortForwardingSession ...`); every question is saved to `agent_questions`.
-- **Daily run:** EventBridge Scheduler starts the instance at 04:55 UTC, cron runs `scripts/daily.sh` at 05:00 (`pipeline.py`, then the instance stops itself), so EC2 runs about 10 minutes a day. A deploy needs a running instance: start it before pushing. Results land in S3 and are queryable in Athena:
+- **Daily run:** EventBridge Scheduler starts the instance at 04:55 UTC (07:55 Turkey), cron runs `scripts/daily.sh` at 05:00 (`pipeline.py`, then the instance stops itself), so EC2 runs about 10 minutes a day. A deploy needs a running instance: start it before pushing. Results land in S3 and are queryable in Athena:
   ```sql
   SELECT run_ts, auc, lift, agent_accuracy, finding FROM last_mile.daily_reports ORDER BY run_ts DESC LIMIT 5;
   ```
