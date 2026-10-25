@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="260" height="48" viewBox="0 0 260 48">
-  <rect x="2" y="4" width="40" height="40" rx="10" fill="#FF9900"/>
-  <path d="M12 33 C17 33 17 15 22 15 S27 33 32 33" fill="none" stroke="#232F3E" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="12" cy="33" r="3.5" fill="#232F3E"/>
-  <circle cx="32" cy="33" r="3.5" fill="#232F3E"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="48" viewBox="0 0 300 48">
+  <rect x="3" y="5" width="38" height="38" rx="10" fill="#0F1B2A" stroke="#FF9900" stroke-width="2"/>
+  <text x="22" y="28.5" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" letter-spacing="-0.3" fill="#FFFFFF">OAA</text>
+  <path d="M11 34 Q22 40 33 34" fill="none" stroke="#FF9900" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M30 31.6 L33 34 L29.6 35.6" fill="none" stroke="#FF9900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="54" y="24" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#FFFFFF">Ops Analyst Agent</text>
-  <text x="54" y="41" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#B6BEC9">Personal project</text>
+  <text x="54" y="41" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#B6BEC9">Personal project · Asil Burak Can</text>
 </svg>

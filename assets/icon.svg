@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-  <rect x="4" y="4" width="40" height="40" rx="10" fill="#FF9900"/>
-  <path d="M14 33 C19 33 19 15 24 15 S29 33 34 33" fill="none" stroke="#232F3E" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="14" cy="33" r="3.5" fill="#232F3E"/>
-  <circle cx="34" cy="33" r="3.5" fill="#232F3E"/>
+  <rect x="3" y="3" width="42" height="42" rx="10" fill="#0F1B2A" stroke="#FF9900" stroke-width="2.5"/>
+  <text x="24" y="27.5" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="-0.3" fill="#FFFFFF">OAA</text>
+  <path d="M11 34 Q24 41 37 34" fill="none" stroke="#FF9900" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M33.5 31.4 L37 34 L33.2 35.8" fill="none" stroke="#FF9900" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
