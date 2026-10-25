@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ops Analyst Agent · Asil Burak Can</title>
+<meta name="description" content="AWS system that flags last-mile packages likely to fail, writes a daily operations report and answers questions in plain language. Personal project by Asil Burak Can.">
+<link rel="icon" href="img/icon.svg">
+<style>
+  :root{--bg:#F2F3F3;--box:#FFFFFF;--text:#000716;--muted:#5F6B7A;--line:#E9EBED;--border:#C6C6CD;--link:#0972D3;--navy:#232F3E;--orange:#FF9900;--red:#C33D69}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif}
+  a{color:var(--link)}
+  header{background:var(--navy);border-bottom:1px solid #414D5C;position:sticky;top:0;z-index:5}
+  .bar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px}
+  .bar img{height:36px}
+  .bar nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+  .bar nav a{color:#fff;text-decoration:none;font-size:14px;font-weight:600}
+  main{max-width:1120px;margin:0 auto;padding:28px 16px 48px}
+  .card{background:var(--box);border:1px solid var(--border);border-radius:16px;padding:22px 26px;margin:18px 0;box-shadow:0 1px 4px rgba(0,7,22,.08)}
+  h1{font-size:34px;line-height:1.2;margin:0 0 8px}
+  h2{font-size:22px;margin:0 0 12px}
+  h3{font-size:16px;margin:0 0 6px}
+  .lead{font-size:18px;color:#414D5C;max-width:820px;margin:0}
+  .by{color:var(--muted);font-size:14px;margin:10px 0 18px}
+  .btns{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-block;padding:9px 18px;border-radius:20px;border:2px solid var(--link);color:var(--link);font-weight:700;text-decoration:none;font-size:15px}
+  .btn.primary{background:var(--orange);border-color:var(--orange);color:var(--text)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+  .kpi{padding:4px 18px;border-left:1px solid var(--line)} .kpi:first-child{border-left:0;padding-left:0}
+  .kpi b{display:block;font-size:30px;color:var(--link);font-weight:400;line-height:1.2}
+  .kpi span{font-size:14px;color:var(--muted)}
+  .kpi small{display:block;font-weight:700;font-size:14px;color:var(--text)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .muted{color:var(--muted)}
+  .vtabs{display:flex;gap:0;margin-bottom:12px}
+  .vtabs button{font:inherit;font-weight:700;font-size:16px;background:none;border:0;border-bottom:3px solid transparent;padding:6px 16px;color:#414D5C;cursor:pointer}
+  .vtabs button+button{border-left:1px solid var(--border)}
+  .vtabs button.on{color:var(--link);border-bottom-color:var(--link)}
+  video{width:100%;border-radius:12px;background:#000;display:block}
+  figure{margin:0} figure img{width:100%;border:1px solid var(--line);border-radius:10px;display:block}
+  figcaption{font-size:14px;color:var(--muted);margin-top:6px}
+  .arch img{width:100%;display:block}
+  .qa{border-left:4px solid var(--orange);padding:4px 0 4px 16px;margin:10px 0}
+  .qa p{margin:4px 0}
+  pre{background:#0F141A;color:#E9EBED;border-radius:10px;padding:14px 16px;overflow:auto;font-size:13px;line-height:1.5}
+  .thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  ul{padding-left:20px;margin:6px 0} li{margin:3px 0}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:10px 16px 30px}
+  @media (max-width:800px){.kpis,.grid3{grid-template-columns:1fr 1fr}.thumbs{grid-template-columns:1fr 1fr}.kpi:nth-child(3){border-left:0;padding-left:0}h1{font-size:28px}}
+  @media (max-width:520px){.kpis,.grid3,.thumbs{grid-template-columns:1fr}.kpi{border-left:0;padding-left:0}.bar nav{display:none}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <img src="img/logo.svg" alt="Ops Analyst Agent · Personal project · Asil Burak Can">
+  <nav><a href="#how">How it works</a><a href="#results">Results</a><a href="https://ops-analyst-agent.streamlit.app">Live demo</a><a href="https://github.com/asilburakcan/Ops-Analyst-Agent">GitHub</a></nav>
+</div></header>
+<main>
+  <section class="card">
+    <h1>Ops Analyst Agent</h1>
+    <p class="lead">An AWS system that flags last-mile packages likely to fail at the door, writes a daily operations report and answers operations questions in plain language.</p>
+    <p class="by">Personal project by Asil Burak Can · data: 2021 Amazon Last Mile Routing Research Challenge (6,112 real routes, July–August 2018)</p>
+    <div class="btns">
+      <a class="btn primary" href="https://ops-analyst-agent.streamlit.app">Open the live demo</a>
+            <a class="btn" href="OAA_case_study.pdf">Case study (PDF)</a>
+      <a class="btn" href="https://github.com/asilburakcan/Ops-Analyst-Agent">Code on GitHub</a>
+    </div>
+  </section>
+
+  <section class="card" id="results">
+    <div class="kpis">
+      <div class="kpi"><small>Model AUC</small><b>0.80</b><span>baselines 0.59 / 0.58</span></div>
+      <div class="kpi"><small>Fail rate in flagged 1%</small><b>5.4%</b><span>about 9× the 0.62% average</span></div>
+      <div class="kpi"><small>SQL agent golden set</small><b>12 / 12</b><span>match the reference SQL</span></div>
+      <div class="kpi"><small>Server time per day</small><b>~10 min</b><span>starts, runs, stops itself</span></div>
+    </div>
+  </section>
+
+<!--LATER video
+  <section class="card" id="video">
+    <h2>Demo video</h2>
+    <div class="vtabs"><button class="on" data-v="en">English</button><button data-v="tr">Türkçe</button></div>
+    <video id="vid" controls preload="metadata" poster="img/poster_en.jpg" src="video/oaa_demo_en.mp4"></video>
+  </section>
+LATER-->
+
+  <section class="card">
+    <h2>What it does</h2>
+    <div class="grid3">
+      <div><h3>Flags risky packages</h3><p class="muted">A LightGBM model scores every package before the vans leave and saves the riskiest 1% for review. It uses only what is known before departure.</p></div>
+      <div><h3>Writes the daily report</h3><p class="muted">An analyst agent turns the scan into a finding, a root cause backed by comparison tables and an automation idea.</p></div>
+      <div><h3>Answers questions</h3><p class="muted">A SQL agent writes Athena SQL, repairs failed queries and can only read. The analyst agent explains the result.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>The app</h2>
+    <div class="grid3">
+      <figure><img src="img/app_scan.png" alt="Today's scan"><figcaption>Today's scan: KPIs, daily report, flags by station, riskiest packages</figcaption></figure>
+      <figure><img src="img/app_tr.png" alt="Turkish interface"><figcaption>The whole app also works in Turkish</figcaption></figure>
+      <figure><img src="img/app_dash.png" alt="Executive dashboard"><figcaption>Executive dashboard: network KPIs, station priority map, trend</figcaption></figure>
+    </div>
+  </section>
+
+<!--LATER qa
+  <section class="card" id="qa">
+    <h2>Example question</h2>
+    <div class="qa">
+      <p><b>Question:</b> <span id="q">why DLA3 fail rate is 1.91% ? what is the root cause?</span></p>
+      <p><b>Finding:</b> <span id="f">__FINDING__</span></p>
+      <p><b>Root cause:</b> <span id="c">__CAUSE__</span></p>
+      <p><b>Automation idea:</b> <span id="i">__IDEA__</span></p>
+    </div>
+    <details><summary>SQL written by the agent</summary><pre id="sql">__SQL__</pre></details>
+  </section>
+LATER-->
+
+  <section class="card arch" id="how">
+    <h2>How it works</h2>
+    <img src="img/architecture.svg" alt="Architecture: open data, S3 and Glue, Athena, risk model and agents, results, Streamlit app; EventBridge, EC2, GitHub and CodePipeline">
+    <ul>
+      <li><b>Daily:</b> EventBridge Scheduler starts EC2 at 04:55 UTC; at 05:00 cron runs the model and the analyst report, writes the results to S3 and stops the instance.</li>
+      <li><b>CI/CD:</b> server-code pushes run CodePipeline (CodeBuild compile and import check, CodeDeploy to EC2). App and doc changes skip it.</li>
+      <li><b>Safety:</b> IAM role on the server and no access keys, no open inbound port, read-only demo user, 1 GB Athena limit per query, 50 questions a day.</li>
+      <li><b>Honest scope:</b> the dataset is historical, so each run scores the same 13 held-out days. Only the ingest source would change for live data.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Running on AWS</h2>
+    <div class="thumbs">
+      <figure><a href="screenshots/01_s3.png"><img src="screenshots/01_s3.png" alt="Amazon S3 bucket"></a><figcaption>S3: tables as Parquet</figcaption></figure>
+      <figure><a href="screenshots/02_glue.png"><img src="screenshots/02_glue.png" alt="AWS Glue tables"></a><figcaption>Glue: 9 tables</figcaption></figure>
+      <figure><a href="screenshots/03_athena.png"><img src="screenshots/03_athena.png" alt="Amazon Athena query"></a><figcaption>Athena: 3 KB scanned</figcaption></figure>
+      <figure><a href="screenshots/04_pipeline.png"><img src="screenshots/04_pipeline.png" alt="AWS CodePipeline"></a><figcaption>CodePipeline: green</figcaption></figure>
+      <figure><a href="screenshots/05_ec2.png"><img src="screenshots/05_ec2.png" alt="Amazon EC2 instance"></a><figcaption>EC2: role, no open port</figcaption></figure>
+    </div>
+  </section>
+</main>
+<footer>Personal portfolio project, not affiliated with Amazon · Data: Amazon Last Mile Routing Research Challenge (AWS Open Data, CC BY-NC 4.0) · Code: MIT</footer>
+<script>
+  const vid = document.getElementById("vid");
+  document.querySelectorAll(".vtabs button").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".vtabs button").forEach(x => x.classList.toggle("on", x === b));
+    vid.poster = `img/poster_${b.dataset.v}.jpg`; vid.src = `video/oaa_demo_${b.dataset.v}.mp4`;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ops Analyst Agent · Case study</title>
+<style>
+  @page{size:A4;margin:16mm 17mm 16mm}
+  body{font:10.4pt/1.5 "Helvetica Neue",Helvetica,Arial,sans-serif;color:#000716;margin:0}
+  .top{display:flex;align-items:center;gap:14px;background:#232F3E;color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px}
+  .top img{height:34px}
+  .top .links{margin-left:auto;text-align:right;font-size:8.6pt;line-height:1.45;color:#C6CED8}
+  .top a{color:#fff;text-decoration:none}
+  h1{font-size:19pt;margin:4px 0 2px}
+  .sub{color:#5F6B7A;margin:0 0 10px}
+  h2{font-size:12.2pt;margin:14px 0 4px;padding-bottom:2px;border-bottom:1.5px solid #E9EBED}
+  p{margin:4px 0 6px}
+  ul{margin:3px 0 6px;padding-left:17px} li{margin:2px 0}
+  table{border-collapse:collapse;width:100%;margin:6px 0 8px;font-size:9.6pt}
+  th,td{text-align:left;padding:4px 8px;border-bottom:1px solid #E9EBED;vertical-align:top}
+  th{background:#F2F3F3}
+  .fig{margin:8px 0 4px;text-align:center}
+  .fig img{width:100%;border:1px solid #E9EBED;border-radius:8px}
+  .cap{font-size:8.6pt;color:#5F6B7A;text-align:center;margin-top:2px}
+  .kpis{display:flex;gap:0;margin:8px 0 6px;border:1px solid #C6C6CD;border-radius:10px;padding:8px 4px}
+  .kpis div{flex:1;padding:0 12px;border-left:1px solid #E9EBED} .kpis div:first-child{border-left:0}
+  .kpis b{display:block;font-size:16pt;color:#0972D3;font-weight:400}
+  .kpis span{font-size:8.4pt;color:#5F6B7A}
+  .two{display:flex;gap:14px} .two>div{flex:1}
+  .shots{display:flex;gap:8px;margin:6px 0} .shots img{width:33%;border:1px solid #E9EBED;border-radius:6px}
+  .break{break-before:page}
+  .foot{margin-top:12px;font-size:8.2pt;color:#5F6B7A;border-top:1px solid #E9EBED;padding-top:6px}
+  code{font-family:Menlo,monospace;font-size:8.8pt;background:#F2F3F3;padding:0 3px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="top">
+  <img src="img/logo.svg" alt="Ops Analyst Agent">
+  <div class="links">Live demo <a href="https://ops-analyst-agent.streamlit.app">ops-analyst-agent.streamlit.app</a><br>
+  Code <a href="https://github.com/asilburakcan/Ops-Analyst-Agent">github.com/asilburakcan/Ops-Analyst-Agent</a><br>
+  Project page <a href="https://asilburakcan.github.io/Ops-Analyst-Agent/">asilburakcan.github.io/Ops-Analyst-Agent</a></div>
+</div>
+
+<h1>Ops Analyst Agent: case study</h1>
+<p class="sub">Asil Burak Can · personal project · AWS, Python, LightGBM, LLM agents</p>
+
+<div class="kpis">
+  <div><b>0.80</b><span>model AUC on 13 unseen days (rules: 0.59 / 0.58)</span></div>
+  <div><b>5.4%</b><span>fail rate in the flagged 1%, about 9× the 0.62% average</span></div>
+  <div><b>12 / 12</b><span>SQL agent golden set, reference SQL match</span></div>
+  <div><b>~10 min</b><span>server time per day; a few cents a month</span></div>
+</div>
+
+<h2>1. The problem</h2>
+<p>A failed delivery costs a second attempt, a longer route and an unhappy customer. In a typical station, dispatchers spot risky packages from experience, and operations questions ("which station fails most, and why?") wait for someone who can write SQL. I wanted to see how much of this can be automated on AWS from data that already exists, with every claim checked against ground truth rather than trusted.</p>
+
+<h2>2. The data</h2>
+<p>The 2021 Amazon Last Mile Routing Research Challenge dataset holds 6,112 real routes from 17 stations in 5 US metro areas, driven in July–August 2018. <code>ingest.py</code> reads the nested JSON from the public bucket and writes three Parquet tables to S3, registered in Glue: 6,112 routes, 904,527 stops and 1,457,175 packages. The run stops if a package has no stop, a stop has no visit order or a row is duplicated. Two real facts are kept and reported instead of removed: 6,515 dropoffs have no zone, and 1,422 packages appear at two stops of one route (attempted at one, delivered at the other). 0.76% of all packages fail.</p>
+
+<h2>3. What I built</h2>
+<div class="fig"><img src="img/architecture.svg" alt="Architecture"></div>
+<div class="cap">Daily scan on EC2; questions any time through Athena; server-code changes ship through CodePipeline.</div>
+<ul>
+  <li><b>Risk model.</b> LightGBM on features known before the van leaves: station, departure hour, weekday, route size and load, packages at the stop, delivery window and the time left to it, planned service time and parcel volume. Route score and visit order exist only after the route, so they are never used. The newest 20% of days are held out as "today".</li>
+  <li><b>Analyst agent.</b> Reads the scan and fixed comparison tables (flagged vs not flagged, fail rate by delivery window, by service-time quartile, top stations) and writes a finding, a root-cause hypothesis and an automation idea.</li>
+  <li><b>SQL agent.</b> Turns a question into one Athena <code>SELECT</code>, runs it, and repairs it up to two times if it fails or returns nothing.</li>
+  <li><b>App.</b> Streamlit in the AWS console style: today's scan, ask the data, executive dashboard, English and Turkish.</li>
+</ul>
+
+<h2>4. Results</h2>
+<table>
+  <tr><th>Check</th><th>Result</th><th>Why it matters</th></tr>
+  <tr><td>Model AUC on 13 held-out days (355,976 packages)</td><td><b>0.80</b></td><td>The two simple rules, the station's past fail rate and "has a delivery window", reach 0.59 and 0.58.</td></tr>
+  <tr><td>Fail rate in the flagged 1% (3,563 packages)</td><td><b>5.4%</b> vs 0.62%</td><td>A reviewer who checks the flagged list finds about 9 times more failures than in a random sample.</td></tr>
+  <tr><td>Accuracy</td><td>not used</td><td>With 0.62% failures, "everything gets delivered" scores 99.38% and helps no one.</td></tr>
+  <tr><td>SQL agent golden set</td><td><b>12 / 12</b>, 0 repairs</td><td>12 questions with reference SQL: joins, grouping, NULLs, percentages and business wording.</td></tr>
+</table>
+<p>The model's strongest signals are planned service time at the stop, packages per stop, the station, the time left to the delivery window and route size. The analyst's report points to the same cause with numbers: packages with a delivery window fail 1.92% vs 0.51% on the held-out days, and the longest quarter of service times fails 1.51% vs 0.37% for the shortest.</p>
+
+<h2>5. Keeping the agents honest</h2>
+<p>Most of the work was not prompting but closing the gaps where a language model guesses. Every error I found became a golden-set question, so it is checked on every change.</p>
+<ul>
+  <li><b>One glossary for people and agents.</b> <code>DATA_DICTIONARY.md</code> defines package, stop, station, failed delivery and the rest. Both agents read its data terms; only the analyst reads the model terms. The SQL agent once read "station" as the depot stop type; the glossary and a golden question fixed it.</li>
+  <li><b>Causes only from comparisons.</b> The analyst once blamed weather, which is not in the data. Now a root cause must come from a comparison table; if it cannot, the agent says so and names the comparison to run.</li>
+  <li><b>Wrong answers count as failures.</b> An empty result triggers a repair, so a wrong filter is fixed instead of reported as "no data".</li>
+  <li><b>Read-only by design.</b> A single <code>SELECT</code> only; write requests are refused before any query or LLM call.</li>
+</ul>
+<div class="shots"><img src="img/app_scan.png" alt="Today's scan"><img src="img/app_tr.png" alt="Turkish interface"><img src="img/app_dash.png" alt="Executive dashboard"></div>
+<div class="cap">Today's scan · Executive dashboard · Turkish interface</div>
+
+<h2>6. Operations and cost</h2>
+<div class="two"><div>
+<ul>
+  <li>EventBridge Scheduler starts EC2 at 04:55 UTC; cron runs the scan at 05:00; the instance stops itself. About 10 minutes of server time a day.</li>
+  <li>CodePipeline runs only when server code changes: CodeBuild compiles and imports every module, CodeDeploy installs on EC2.</li>
+</ul></div><div>
+<ul>
+  <li>IAM role on the server, no access keys, no open port. The public demo uses a read-only user, a 1 GB Athena limit per query and 50 questions a day.</li>
+  <li>Cost: a few cents a month. Data in S3 is 124 MB; Athena charges $5 per TB scanned.</li>
+</ul></div></div>
+
+<h2>7. Limits and next steps</h2>
+<ul>
+  <li><b>Historical data.</b> Each run scores the same 13 held-out days. Connecting a live feed only changes the ingest step.</li>
+  <li><b>Validation.</b> One time split today; rolling time-series validation and calibrated probabilities would make the risk score usable as a probability.</li>
+  <li><b>Action.</b> Send the flagged list to dispatch (SNS or email) and track how many flags were acted on, so the model is judged on prevented failures, not only on AUC.</li>
+  <li><b>Thresholds.</b> A fixed 1% is simple; a per-station capacity for reviews would match how stations actually work.</li>
+</ul>
+
+<p class="foot">Personal portfolio project, not affiliated with Amazon. Data: Amazon Last Mile Routing Research Challenge, AWS Open Data, CC BY-NC 4.0. Code: MIT.</p>
+</body>
+</html>
