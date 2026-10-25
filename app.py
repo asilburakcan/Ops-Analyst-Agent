@@ -233,19 +233,7 @@ def report_text(finding, cause, idea, lang):
     return agents.translate(texts, lang)
 
 
-try:
-    report, flags, golden = load()
-except Exception as e:  # TEMP: setup check for the hosted demo, shows the shape of the settings, never their values
-    def shape(k):
-        v = os.environ.get(k)
-        if v is None:
-            return f"{k}: missing"
-        start = f", starts {v[:4]}" if k == "AWS_ACCESS_KEY_ID" else ""
-        return f"{k}: length {len(v)}{start}, has space {any(c.isspace() for c in v)}, ascii {v.isascii()}"
-    st.error(f"{type(e).__name__}: {str(e)[:160]}")
-    st.code("\n".join(shape(k) for k in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION",
-                                         "AWS_DEFAULT_REGION", "S3_BUCKET", "AWS_SESSION_TOKEN", "AWS_PROFILE")))
-    st.stop()
+report, flags, golden = load()
 r = report.iloc[0]
 
 # Cloudscape (AWS console) light tokens
