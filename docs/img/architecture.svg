@@ -62,7 +62,7 @@
   <text x="946" y="214" class="t">Streamlit app</text>
   <text x="946" y="234" class="s">today's scan · ask the data</text>
   <text x="946" y="251" class="s">executive dashboard · EN/TR</text>
-  <text x="946" y="268" class="s">public demo on Streamlit Cloud</text>
+  <text x="946" y="268" class="s">read-only access · 50 questions/day</text>
 
   <path d="M210 113 H246" class="l" marker-end="url(#a)"/>
   <text x="212" y="134" class="s" font-size="11">ingest</text>

@@ -2,7 +2,7 @@
 
 An AWS system that finds last-mile packages likely to fail at the door, writes a daily operations report and answers operations questions in plain language.
 
-**[Live demo](https://ops-analyst-agent.streamlit.app)** · **[Video, 95 s](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)** · **[Case study (PDF)](https://asilburakcan.github.io/Ops-Analyst-Agent/OAA_case_study.pdf)** · **[Project page](https://asilburakcan.github.io/Ops-Analyst-Agent/)**
+**[Video, 95 s](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)** · **[Project page](https://asilburakcan.github.io/Ops-Analyst-Agent/)**
 
 [![Watch the 95-second demo](docs/img/video_thumb.jpg)](https://asilburakcan.github.io/Ops-Analyst-Agent/video/oaa_demo_en.mp4)
 
@@ -49,7 +49,7 @@ The strongest signals are planned service time at the stop, packages per stop, s
 - **Data:** `ingest.py` reads the public Amazon Last Mile files, checks them and writes three Parquet tables to S3, registered in Glue. Athena queries them.
 - **Daily run:** EventBridge Scheduler starts the EC2 instance at 04:55 UTC. At 05:00 cron runs `scripts/daily.sh`: the model, the analyst report and the results to S3. Then the instance stops itself, so it runs about 10 minutes a day.
 - **CI/CD:** a push that changes server code runs CodePipeline: CodeBuild compiles and imports every module, CodeDeploy installs it on EC2. App and documentation changes skip the pipeline.
-- **Demo:** the app runs on Streamlit Community Cloud with a read-only IAM user. Athena stops any query above 1 GB, and the question box allows 50 questions a day.
+- **App access:** a read-only IAM user. Athena stops any query above 1 GB, and the question box allows 50 questions a day.
 - **LLM:** Groq (`gpt-oss-120b` for SQL, `gpt-oss-20b` for the analyst). `LLM=bedrock` runs the same agents on Amazon Bedrock with no other change.
 
 ## Running on AWS
